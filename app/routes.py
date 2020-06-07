@@ -8,7 +8,7 @@ from app.forms import LoginForm, RegistrationForm
 from app.models import User, GHProfile, TwitterUser, TwitterUserLabel
 from app.forms import ResetPasswordRequestForm
 from app.forms import ResetPasswordForm
-from app.email import send_password_reset_email
+from app.flemail import send_password_reset_email
 
 from flask_login import current_user, login_user, logout_user, login_required
 
