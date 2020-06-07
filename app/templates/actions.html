@@ -1,0 +1,8 @@
+{% if tw_label_buttons %}
+{% if tw_label_buttons[tw_user.tw_id] %}
+    {% for tw_label_button in tw_label_buttons[tw_user.tw_id] %}
+        <a href="{{ tw_label_button['url'] }}"><button type="button" class="btn btn-default">{{ tw_label_button['name'] }}</button></a>
+    {% endfor %}
+{% endif %}
+{% endif %}
+

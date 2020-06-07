@@ -1,0 +1,13 @@
+{% if tw_labels %}
+{% if tw_labels[tw_user.tw_id]  %}
+    {% for tw_label in tw_labels[tw_user.tw_id]  %}
+        {% if tw_label.text == "valid" %}
+            <span class="label label-default">{{ tw_label.author.username }}</span><span class="label label-success">{{ tw_label.text }}</span>
+        {% elif tw_label.text == "invalid" %}
+            <span class="label label-default">{{ tw_label.author.username }}</span><span class="label label-danger">{{ tw_label.text }}</span>
+        {% else %}
+            <span class="label label-default"></span><span class="label label-info">{{ tw_label.text }}</span>
+        {% endif %}
+    {% endfor %}
+{% endif %}
+{% endif %}
