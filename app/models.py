@@ -6,7 +6,7 @@
 #from sqlalchemy.ext.associationproxy import association_proxy
 # from twitterDB.base import Base
 
-from app import db
+from app import db, mongo
 from dateutil import parser
 import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -15,7 +15,12 @@ from app import login
 from time import time
 import jwt
 from app import app
+from .queries import ToxicIssuesQuerySet, IssueCommentsQuerySet
 
+
+#################################
+#### Twitter MySQL DB Tables ####
+#################################
 
 class User(UserMixin, db.Model):
     __tablename__ = 'browser_users'
@@ -131,7 +136,42 @@ class TwitterUserLabel(db.Model):
                     (self.tw_id, self.text) 
     
 
-    
+
+#####################################
+#### GHTorrent Mongo Collections ####
+#####################################
+
+class Issue(mongo.DynamicDocument):
+    meta = {
+        'collection': 'issues'
+    }
+#     body = mongo.StringField(max_length=50, required=True)
+#     number = mongo.StringField(max_length=50, required=True)
+
+
+class IssueComment(mongo.DynamicDocument):
+    meta = {
+        'collection': 'issue_comments',
+        'queryset_class': IssueCommentsQuerySet
+    }
+
+
+class ToxicIssue(mongo.DynamicDocument):
+    meta = {
+        'collection': 'christian_toxic_issues',
+        'queryset_class': ToxicIssuesQuerySet
+    }
+
+class ToxicIssueComment(mongo.DynamicDocument):
+    meta = {
+        'collection': 'christian_toxic_issue_comments',
+        'queryset_class': ToxicIssuesQuerySet
+    }
+
+
+
+
+
 
     # def __init__(self, username, email, password):
     #     self.username = username

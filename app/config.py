@@ -4,11 +4,20 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 class Config(object):
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'you-will-never-guess'
     SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://%s:%s@%s/%s?charset=utf8mb4' % \
-                                        (os.environ.get('DB_USERNAME', ''),
-                                        os.environ.get('DB_PASSWORD', ''),
-                                        os.environ.get('DB_HOST', ''),
-                                        os.environ.get('DATABASE_NAME', ''))
+                                    (os.environ.get('DB_USERNAME', ''),
+                                    os.environ.get('DB_PASSWORD', ''),
+                                    os.environ.get('DB_HOST', ''),
+                                    os.environ.get('DATABASE_NAME', ''))
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    MONGO_URI = 'mongodb://%s:%s@%s:27017/%s' % \
+                    (os.environ.get('MONGO_USER', ''),
+                    os.environ.get('MONGO_PASSWORD', ''),
+                    os.environ.get('MONGO_HOST', ''),
+                    os.environ.get('MONGO_DB', ''))
+
+    MONGODB_SETTINGS = {'db':os.environ.get('MONGO_DB', ''),
+                        'host':MONGO_URI}
 
     RESULTS_PER_PAGE = 20
 
@@ -20,4 +29,21 @@ class Config(object):
     ADMINS = ['vasilescu@cmu.edu']
 
     SECRET_KEY = '1234567890'
+    VERSION = 'v2'
+
+    TW_GH_LABELS = [
+            ['Confirm','valid'], 
+            ['Invalid', 'invalid']
+        ]
+
+    TOXICITY_LABELS = [
+            ['Confirm toxic','toxic'], 
+            ['Potentially problematic', 'maybe'],
+            ['Not toxic -- Non english', 'not-english'], 
+            ['Not toxic -- Selfdirected', 'self-directed'],
+            ['Not toxic -- Owner', 'owner'],
+            ['Not toxic -- Mild/colloquial', 'mild'],
+            ['Not toxic -- Other', 'other'],
+            ['Other, maybe, revisit', 'revisit']
+        ]
 

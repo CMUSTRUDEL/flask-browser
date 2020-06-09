@@ -1,0 +1,121 @@
+{# Macro for creating pagination navigation links #}
+{% macro render_pagination(pagination, endpoint) %}
+<table class="table table-borderless">
+<tbody>
+<tr>
+  <td>
+    <div class="text-left">
+      <div class=pagination>
+        {% if pagination.has_prev %}
+        <a href="{{ url_for(endpoint, page=pagination.prev_num) }}">Previous page</a>
+        {% endif %}
+        <span>&#183;</span>
+        {% if pagination.has_next %}
+        <a href="{{ url_for(endpoint, page=pagination.next_num) }}">Next page</a>
+        {% endif %}
+      </div>
+    </div>
+  </td>
+  <td>
+    <div class="text-right">
+      Jump to page: 
+      <div class=pagination>
+      {% for page in pagination.iter_pages() %}
+        {% if page %}
+          {% if page != pagination.page %}
+            <a href="{{ url_for(endpoint, page=page) }}">{{ page }}</a>
+          {% else %}
+            <strong>{{ page }}</strong>
+          {% endif %}
+        {% else %}
+          <span class=ellipsis>…</span>
+        {% endif %}
+      {% endfor %}
+      </div>
+    </div>
+  </td>
+</tr>
+</tbody>
+</table>
+{% endmacro %}
+
+
+{% macro round_float(x) %}
+{{ "{:.2f}".format(x) }}
+{% endmacro %}
+
+
+{% macro render_toxicity(tissue) %}
+<span class="fas fa-language"></span> {{ round_float(tissue.toxicity[version].en) }}
+<span>&#183;</span> 
+<span class="fab fa-google"></span> {{ round_float(tissue.toxicity[version].orig.persp) }}
+<span>&#183;</span> 
+<span class="fas fa-angry"></span> {{ round_float(tissue.toxicity[version].orig.polite) }}
+{% endmacro %}
+
+
+{% macro render_toxicity_actions(label_buttons, id) %}
+{% if label_buttons %}
+  {% if label_buttons[id] %}
+    {% for label_button in label_buttons[id] %}
+        <a href="{{ label_button['url'] }}"><button type="button" class="btn btn-default">{{ label_button['name'] }}</button></a>
+    {% endfor %}
+  {% endif %}
+{% endif %}
+{% endmacro %}
+
+
+{% macro render_toxicity_labels(toxic_labels, id) %}
+{% if toxic_labels %}
+{% if toxic_labels[id]  %}
+    {% for toxic_label in toxic_labels[id]  %}
+        <span class="label label-default">{{ toxic_label.user }}</span><span class="label label-info">{{ toxic_label.label }}</span>
+    {% endfor %}
+{% endif %}
+{% endif %}
+{% endmacro %}
+
+
+
+
+{# Macro for creating page number navigation links #}
+{% macro render_jump_to_page(pagination, endpoint) %}
+<div class="pagination-prevnext">
+    <div class="text-right">
+      Jump to page: 
+      <div class=pagination>
+      {% for page in pagination.iter_pages() %}
+        {% if page %}
+          {% if page != pagination.page %}
+            <a href="{{ url_for(endpoint, page=page) }}">{{ page }}</a>
+          {% else %}
+            <strong>{{ page }}</strong>
+          {% endif %}
+        {% else %}
+          <span class=ellipsis>…</span>
+        {% endif %}
+      {% endfor %}
+      </div>
+    </div>
+</div>
+{% endmacro %}
+
+
+{# Macro for creating prev & next page navigation links #}
+{% macro render_prev_next_page(prev_url, next_url) %}
+<div class="pagination-prevnext">
+    <ul class="list-inline">
+        {% if prev_url %}
+        <li>
+        <a href="{{ prev_url }}">Previous page</a>
+        </li>
+        {% endif %}
+        {% if next_url %}
+        <li class="footer-menu-divider">⋅</li>
+        <li>
+        <a href="{{ next_url }}">Next page</a>
+        </li>
+        {% endif %}                        
+    </ul>
+</div>
+{% endmacro %}
