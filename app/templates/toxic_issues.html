@@ -1,28 +1,39 @@
 {% extends "base.html" %}
-{% from "macros.html" import render_pagination with context %}
-{% from "macros.html" import round_float with context %}
-{% from "macros.html" import render_toxicity with context %}
 
 {% block content %}
 
 <div class="center">
-    <h3>Toxic issues</h3>
-    {{ render_pagination(issues, 'list_toxic') }}
+    {{ pagination.links }}
+
+    <h3>{{ title }}</h3>
     
-    <ul>
-        {% for issue in issues.items %}
-            <li>
-                <a href="/issue/{{ issue.id }}">{{ issue.id }}</a>: 
-                &nbsp;
-                {{ issue.updated_at }}
-                &nbsp;
-                {% if issue.toxicity[version].manual %}
-                    {{ issue.toxicity[version].manual.reason }}
-                {% endif %}
-                {{ render_toxicity(issue) }}
-            </li>
-        {% endfor %}
-    </ul>
+    <table class="table table-borderless table-condensed">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Issue id</th>
+            <th>Updated at</th>
+          </tr>
+        </thead>
+        <tbody>
+            {% for issue in issues %}
+            <tr>
+                <td>{{ loop.index + pagination.skip }}</td>
+                <td>
+                    <a href="/issue/{{ issue['_id'] }}">{{ issue['_id'] }}</a> 
+                </td>
+                <td>
+                    {{ issue.updated_at }}
+                </td>
+                <td>
+                    {% if issue.manual %}
+                        {{ issue.manual.reason }}
+                    {% endif %}
+                </td>
+            {% endfor %}
+        </tbody>
+    </table>
+
 </div>
 
 {% endblock %}

@@ -19,6 +19,13 @@ from bson.objectid import ObjectId
 import json
 
 
+@app.template_filter('tojson_pretty')
+def to_pretty_json(value):
+    return json.dumps(value, 
+                    indent=4, separators=(',', ': '))
+                    # sort_keys=True,
+
+
 @app.route('/')
 @app.route('/index')
 @login_required

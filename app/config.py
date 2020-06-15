@@ -20,6 +20,7 @@ class Config(object):
                         'host':MONGO_URI}
 
     RESULTS_PER_PAGE = 20
+    PER_PAGE_PARAMETER = 1
 
     MAIL_SERVER = os.environ.get('MAIL_SERVER')
     MAIL_PORT = int(os.environ.get('MAIL_PORT') or 25)

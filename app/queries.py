@@ -1,33 +1,60 @@
-# from flask_mongoengine import MongoEngine
 from app import app
-# from app import mongo
-from flask_mongoengine import BaseQuerySet
-
-class ToxicIssuesQuerySet(BaseQuerySet):
-
-    def get_toxic_issues(self):
-        '''
-        {
-          "toxicity.<v>.score":1, 
-          "toxicity.<v>.orig.persp_raw.detectedLanguages":"en", 
-          "toxicity.<v>.en":{$gt:0.001}
-        }
-        '''
-        # Note: fields cannot contain '.' --> replace by '_'
-        kwargs = {
-            'toxicity__{0}__score'.format(app.config['VERSION']): 1,
-            'toxicity__{0}__orig__persp_raw__detectedLanguages'.format(app.config['VERSION']): ["en"],
-            'toxicity__{0}__en__{1}'.format(app.config['VERSION'], 'gt'): 0.001
-        }
-        return self.filter(**kwargs)
 
 
-class IssueCommentsQuerySet(BaseQuerySet):
+query_classifier_toxic = \
+    {"$and":[ 
+        {"toxicity."+app.config['VERSION']+".score":1}, 
+        {"toxicity."+app.config['VERSION']+".orig.persp_raw.detectedLanguages":["en"]},
+        {"toxicity."+app.config['VERSION']+".en":{"$gt": .001}}
+        ]
+    }
 
-    def get_comments(self, owner, repo, number):
-        kwargs = {
-            'owner': owner,
-            'repo': repo,
-            'issue_id': number
-        }
-        return self.filter(**kwargs)
+query_has_predicted_toxic_comment = \
+    {"toxicity."+app.config['VERSION']+".has_predicted_toxic_comment":True
+    }
+
+query_predicted_issues_all = \
+    {"$or":[ 
+        query_has_predicted_toxic_comment, 
+        query_classifier_toxic,
+        ]
+    }
+
+query_predicted_issues_w_comments = \
+    {"$and":[
+            {"$or":[ 
+                query_has_predicted_toxic_comment, 
+                query_classifier_toxic,
+                ]
+            },
+            {"num_comments":{"$gt":0}}
+        ]
+    }
+
+
+query_ck_annotations = \
+    {"$or":[ 
+        {"toxicity.manual.score":1}, 
+        {"toxicity.manual.score":0},
+        ]
+    }
+
+
+query_annotations = {"has_labeled_comment":True}
+
+query_annotations_toxic = \
+    {"$or":[
+        {"has_labeled_toxic_comment":True},
+        {"is_labeled_toxic":True},
+        ]
+    }
+
+
+query_confirmed_toxic = \
+    {"$or":[ 
+        {"toxicity.manual.score":1}, 
+        {"toxicity.manual.score":0},
+        {"has_labeled_comment":True},
+        ]
+    }
+

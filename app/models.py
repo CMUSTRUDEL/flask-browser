@@ -15,7 +15,7 @@ from app import login
 from time import time
 import jwt
 from app import app
-from .queries import ToxicIssuesQuerySet, IssueCommentsQuerySet
+from .queries import ToxicIssuesQuerySet, IssueCommentsQuerySet, IssueQuerySet
 
 
 #################################
@@ -143,7 +143,8 @@ class TwitterUserLabel(db.Model):
 
 class Issue(mongo.DynamicDocument):
     meta = {
-        'collection': 'issues'
+        'collection': 'issues',
+        'queryset_class': IssueQuerySet
     }
 #     body = mongo.StringField(max_length=50, required=True)
 #     number = mongo.StringField(max_length=50, required=True)

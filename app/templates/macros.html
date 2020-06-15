@@ -1,5 +1,5 @@
 {# Macro for creating pagination navigation links #}
-{% macro render_pagination(pagination, endpoint) %}
+{% macro render_pagination(pagination, endpoint, what) %}
 <table class="table table-borderless">
 <tbody>
 <tr>
@@ -7,11 +7,11 @@
     <div class="text-left">
       <div class=pagination>
         {% if pagination.has_prev %}
-        <a href="{{ url_for(endpoint, page=pagination.prev_num) }}">Previous page</a>
+        <a href="{{ url_for(endpoint, what=what, page=pagination.prev_num) }}">Previous page</a>
         {% endif %}
         <span>&#183;</span>
         {% if pagination.has_next %}
-        <a href="{{ url_for(endpoint, page=pagination.next_num) }}">Next page</a>
+        <a href="{{ url_for(endpoint, what=what, page=pagination.next_num) }}">Next page</a>
         {% endif %}
       </div>
     </div>
@@ -23,7 +23,7 @@
       {% for page in pagination.iter_pages() %}
         {% if page %}
           {% if page != pagination.page %}
-            <a href="{{ url_for(endpoint, page=page) }}">{{ page }}</a>
+            <a href="{{ url_for(endpoint, what=what, page=page) }}">{{ page }}</a>
           {% else %}
             <strong>{{ page }}</strong>
           {% endif %}
@@ -41,20 +41,63 @@
 
 
 {% macro round_float(x) %}
-{{ "{:.2f}".format(x) }}
+{% if x %}
+  {{ "{:.2f}".format(x) }}
+{% else %}
+  {{ "NA" }}
+{% endif %}
 {% endmacro %}
 
-
-{% macro render_toxicity(tissue) %}
-<span class="fas fa-language"></span> {{ round_float(tissue.toxicity[version].en) }}
-<span>&#183;</span> 
-<span class="fab fa-google"></span> {{ round_float(tissue.toxicity[version].orig.persp) }}
-<span>&#183;</span> 
-<span class="fas fa-angry"></span> {{ round_float(tissue.toxicity[version].orig.polite) }}
+{% macro render_mini_toxicity(tissue, issueid, version) %}
+{% if tissue.toxicity %}
+  {% if tissue.toxicity[version] %}
+  <span class="fas fa-language"></span> {{ round_float(tissue.toxicity[version].en) }}
+  <span>&#183;</span> 
+  {% if tissue.toxicity[version].orig %}
+  <span class="fab fa-google"></span> {{ round_float(tissue.toxicity[version].orig.persp) }}
+  <span>&#183;</span> 
+  <span class="fas fa-angry"></span> {{ round_float(tissue.toxicity[version].orig.polite) }}
+  {% else %}
+  <span class="fab fa-google"></span> {{ "NA" }}
+  <span>&#183;</span> 
+  <span class="fas fa-angry"></span> {{ "NA" }}
+  {% endif %}
+  {% endif %}
+{% endif %}
+{% endmacro %}
+  
+{% macro render_toxicity(tissue, issueid, version) %}
+<p class="classification">{{ "Predicted toxic" if is_toxic(tissue) else "Predicted nontoxic" }}:
+    {{ render_mini_toxicity(tissue, issueid, version) }}
+    {% if is_toxic(tissue) %}
+    {% if tissue.toxicity[version] %}
+      <a class="btn btn-link" data-toggle="collapse" href="#collapse-{{ issueid }}" role="button" aria-expanded="false" aria-controls="collapse-{{ issueid }}">Details</a>
+    {% endif %}
+  {% endif %}
+</p>
+<div class="content json">
+<div class="collapse" id="collapse-{{ issueid }}">
+  <div class="card card-body">
+      {% if is_toxic(tissue) %}
+      {% if tissue.toxicity[version] %}
+        {{ tissue.toxicity[version] | tojson_pretty }}
+        <br>
+      {% endif %}
+      {% endif %}
+      {% if tissue.toxicity %}
+      {% if tissue.toxicity.manual %}
+        {{ tissue.toxicity.manual | tojson_pretty }}
+        <br>
+      {% endif %}
+      {% endif %}
+  </div>
+</div>
+</div>
 {% endmacro %}
 
 
 {% macro render_toxicity_actions(label_buttons, id) %}
+<p class="classification">Add labels: 
 {% if label_buttons %}
   {% if label_buttons[id] %}
     {% for label_button in label_buttons[id] %}
@@ -62,20 +105,34 @@
     {% endfor %}
   {% endif %}
 {% endif %}
+</p>
 {% endmacro %}
 
 
 {% macro render_toxicity_labels(toxic_labels, id) %}
+<p class="classification">Current labels: 
 {% if toxic_labels %}
 {% if toxic_labels[id]  %}
     {% for toxic_label in toxic_labels[id]  %}
+      {% if toxic_label.label == 'toxic' %}
+        <span class="label label-default">{{ toxic_label.user }}</span><span class="label label-danger">{{ toxic_label.label }}</span>
+      {% else %}
         <span class="label label-default">{{ toxic_label.user }}</span><span class="label label-info">{{ toxic_label.label }}</span>
+      {% endif %}
     {% endfor %}
 {% endif %}
 {% endif %}
+</p>
 {% endmacro %}
 
 
+{% macro render_post_body(post) %}
+<div  class="content {{ "toxic" if is_toxic(post) else "nontoxic" }}">
+  <blockquote class="blockquote {{ "toxic" if is_toxic(post) else "nontoxic" }}">
+      {{ post.body|markdown }}
+  </blockquote>
+</div>
+{% endmacro %}
 
 
 {# Macro for creating page number navigation links #}

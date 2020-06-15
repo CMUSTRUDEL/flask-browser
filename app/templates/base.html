@@ -11,6 +11,7 @@
         <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
         <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
         <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+        <link rel="shortcut icon" href="{{ url_for('static', filename='icons/favicon.ico') }}">
     </head>
     <body>
         <nav class="navbar navbar-default navbar-fixed-top topnav" role="navigation">
@@ -28,8 +29,6 @@
                   <ul class="nav navbar-nav navbar-right">
                       <li><a href="{{ url_for('index') }}">Home</a></li>
                       {% if current_user.is_authenticated %}
-                        <li><a href="{{ url_for('twitter') }}">Twitter</a></li>
-                        <li><a href="{{ url_for('list_toxic') }}">Toxic issues</a></li>
                       {% if current_user.is_admin %}
                         <li><a href="{{ url_for('register') }}">Admin</a></li>
                       {% endif %}
@@ -92,5 +91,7 @@
                 </div>
             </div>
         </footer>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
     </body>
 </html>

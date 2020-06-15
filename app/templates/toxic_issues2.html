@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% from "macros.html" import round_float with context %}
+{% from "macros.html" import render_toxicity with context %}
+{% from "macros.html" import render_toxicity_actions with context %}
+{% from "macros.html" import render_toxicity_labels with context %}
+
+{% block content %}
+
+
+<div class="center">
+    {{ pagination.links }}
+</div>
+    
+{% for tissue in tissues %}
+    <div class="center">
+        {% set issueid = tissue['_id']|string %}
+        {% set issue = issues[issueid] %}
+    
+        <h3><span class="fab fa-github"></span> Issue {{ issue['_id'] }}: 
+            <a href="https://github.com/{{ issue.owner }}/{{ issue.repo }}/issues/{{ issue.number }}">{{ issue.owner }}/{{ issue.repo }} #{{ issue.number }}</a>
+        </h3>
+        <div  class="content {{ "toxic" if is_toxic(tissue) else "nontoxic" }}">
+            <blockquote class="blockquote {{ "toxic" if is_toxic(tissue) else "nontoxic" }}">
+                <h4>{{ issue.title }}</h4>
+                {{ issue.body|markdown }}
+            </blockquote>
+        </div>
+        {{ render_toxicity(tissue, issueid, version) }}
+        {{ render_toxicity_labels(toxic_labels, issueid) }}
+        {{ render_toxicity_actions(toxic_label_buttons, issueid) }}
+    </div>
+
+    {% for comment in comments[issueid] %}
+        {% set commentid = comment['_id']|string %}
+        <div class="center">
+            <h4>
+                <a href="{{ comment.html_url }}">Comment {{ commentid }}</a>,
+                {{ comment.updated_at }},
+                by <a href="{{ comment.user.html_url }}">{{ comment.user.login }}</a>: 
+            </h4>
+            <div  class="content {{ "toxic" if is_toxic(comment) else "nontoxic" }}">
+                <blockquote class="blockquote {{ "toxic" if is_toxic(comment) else "nontoxic" }}">
+                    {{ comment.body|markdown }}
+                </blockquote>
+            </div>
+            {{ render_toxicity(comment, commentid, version) }}
+            {{ render_toxicity_labels(toxic_labels, commentid) }}
+            {{ render_toxicity_actions(toxic_label_buttons, commentid) }}
+        </div>
+    {% endfor %}
+
+
+    {% endfor %}
+
+{% endblock %}
+
