@@ -17,9 +17,14 @@
         {% set issueid = tissue['_id']|string %}
         {% set issue = issues[issueid] %}
     
-        <h3><span class="fab fa-github"></span> Issue {{ issue['_id'] }}: 
+        <h3><span class="fab fa-github"></span>
             <a href="https://github.com/{{ issue.owner }}/{{ issue.repo }}/issues/{{ issue.number }}">{{ issue.owner }}/{{ issue.repo }} #{{ issue.number }}</a>
         </h3>
+        <h4>
+            <a href="https://github.com/{{ issue.owner }}/{{ issue.repo }}/issues/{{ issue.number }}">Issue {{ issue['_id'] }}</a>,
+            {{ issue.updated_at }},
+            by <a href="{{ issue.user.html_url }}">{{ issue.user.login }}</a> [{{ issue.author_association }}]: 
+        </h4>
         <div  class="content {{ "toxic" if is_toxic(tissue) else "nontoxic" }}">
             <blockquote class="blockquote {{ "toxic" if is_toxic(tissue) else "nontoxic" }}">
                 <h4>{{ issue.title }}</h4>
@@ -37,7 +42,7 @@
             <h4>
                 <a href="{{ comment.html_url }}">Comment {{ commentid }}</a>,
                 {{ comment.updated_at }},
-                by <a href="{{ comment.user.html_url }}">{{ comment.user.login }}</a>: 
+                by <a href="{{ comment.user.html_url }}">{{ comment.user.login }}</a> [{{ comment.author_association }}]: 
             </h4>
             <div  class="content {{ "toxic" if is_toxic(comment) else "nontoxic" }}">
                 <blockquote class="blockquote {{ "toxic" if is_toxic(comment) else "nontoxic" }}">

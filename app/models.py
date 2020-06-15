@@ -15,7 +15,7 @@ from app import login
 from time import time
 import jwt
 from app import app
-from .queries import ToxicIssuesQuerySet, IssueCommentsQuerySet, IssueQuerySet
+# from .queries import ToxicIssuesQuerySet, IssueCommentsQuerySet, IssueQuerySet
 
 
 #################################
@@ -144,89 +144,26 @@ class TwitterUserLabel(db.Model):
 class Issue(mongo.DynamicDocument):
     meta = {
         'collection': 'issues',
-        'queryset_class': IssueQuerySet
+        # 'queryset_class': IssueQuerySet
     }
-#     body = mongo.StringField(max_length=50, required=True)
-#     number = mongo.StringField(max_length=50, required=True)
-
 
 class IssueComment(mongo.DynamicDocument):
     meta = {
         'collection': 'issue_comments',
-        'queryset_class': IssueCommentsQuerySet
+        # 'queryset_class': IssueCommentsQuerySet
     }
 
 
 class ToxicIssue(mongo.DynamicDocument):
     meta = {
         'collection': 'christian_toxic_issues',
-        'queryset_class': ToxicIssuesQuerySet
+        # 'queryset_class': ToxicIssuesQuerySet
     }
 
 class ToxicIssueComment(mongo.DynamicDocument):
     meta = {
         'collection': 'christian_toxic_issue_comments',
-        'queryset_class': ToxicIssuesQuerySet
+        # 'queryset_class': ToxicIssuesQuerySet
     }
-
-
-
-
-
-
-    # def __init__(self, username, email, password):
-    #     self.username = username
-    #     self.email = email
-    #     self.password = password
-    #     self.is_admin = False
-
-
-
-    # def __init__(self,
-    #             tw_id, 
-    #             mongo_collection,
-    #             ght_id, 
-    #             tw_name, 
-    #             tw_screen_name,
-    #             tw_created_at,
-    #             tw_followers, 
-    #             tw_listed, 
-    #             tw_favourites,
-    #             tw_utc, 
-    #             tw_time_zone,
-    #             tw_location, 
-    #             # tw_profile_location,
-    #             tw_statuses, 
-    #             tw_friends, 
-    #             tw_url,
-    #             tw_desc, 
-    #             tw_lang,
-    #             tw_img_url):
-
-    #     self.tw_id = tw_id
-    #     self.mongo_collection = mongo_collection
-    #     self.ght_id = ght_id
-    #     self.tw_name = tw_name
-    #     self.tw_screen_name = tw_screen_name
-    #     # self.tw_created_at = tw_created_at
-    #     self.tw_followers = tw_followers
-    #     self.tw_listed = tw_listed
-    #     self.tw_favourites = tw_favourites
-    #     self.tw_utc = tw_utc
-    #     self.tw_time_zone = tw_time_zone
-    #     self.tw_location = tw_location
-    #     # self.tw_profile_location = tw_profile_location
-    #     self.tw_statuses = tw_statuses
-    #     self.tw_friends = tw_friends
-    #     self.tw_url = tw_url
-    #     self.tw_desc = tw_desc
-    #     self.tw_lang = tw_lang
-    #     self.tw_img_url = tw_img_url
-        
-    #     if tw_created_at is not None:
-    #         st = parser.parse(tw_created_at)
-    #         self.tw_created_at = datetime.datetime(st.year, st.month, st.day, st.hour, st.minute, st.second)
-    #     else:
-    #         self.tw_created_at = None
 
 
