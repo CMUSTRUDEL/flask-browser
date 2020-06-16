@@ -7,18 +7,18 @@ from app import app
 from app import db, mongo, pmongo
 from app.models import User
 from app.models import Issue, IssueComment, ToxicIssue, ToxicIssueComment
-
+from app.forms import LabelForm
 from flask_login import current_user, login_required
 
 from datetime import datetime
-from .utils import is_toxic
+from app.utils import is_toxic
 from bson.objectid import ObjectId
 
 import json
 
 from mongoengine.queryset.visitor import Q
 
-from .queries import query_predicted_issues_all, \
+from app.queries import query_predicted_issues_all, \
                     query_predicted_issues_w_comments, \
                     query_annotations, \
                     query_annotations_toxic
@@ -52,11 +52,11 @@ def add_toxicity_label_buttons(label_buttons, table, eid):
     return label_buttons
 
 
-def get_toxicity_labels(labels, table, eid):
+def get_toxicity_labels(labels, table, collection, eid):
     labels.setdefault(eid, [])
     r = pmongo.db[table].find_one({"_id":ObjectId(eid)})
     if r:
-        llist = r.get('toxicity',{}).get('manual_labels',[])
+        llist = r.get('toxicity',{}).get(collection,[])
         seen = {}
         for label in llist:
             if not seen.get((label['user'], label['label']), False):
@@ -67,7 +67,6 @@ def get_toxicity_labels(labels, table, eid):
         # if reason is not None:
         #     labels[eid].append({'user':'christian', 'label':reason})
     return labels
-
 
 
 
@@ -122,15 +121,109 @@ def label_toxic_entry(table, eid, label):
 
 
 
+def get_qualitative_label_buttons(label_buttons, table, eid):
+    label_buttons.setdefault(eid, [])
+    labels = [l for l in pmongo.db['bogdan_toxic_qualitative_analysis'].find()]
 
-def list_issues(q, offset, per_page, with_total=False): 
+    for l in labels:
+        d = {'url':'/qualitativelabel/%s/%s/%s' % (table, eid, l['label_sanitized']), 
+            'name':l['label_sanitized']}
+        label_buttons[eid].append(d)
+    return label_buttons
+
+
+
+@app.route('/qualitativelabel/<table>/<eid>/<label>')
+@login_required
+def add_code(table, eid, label):
+    # flash(label)
+    label_sanitized = '-'.join(label.lower().split())
+    r = pmongo.db[table].find_one_and_update(
+        {"_id":ObjectId(eid)},
+        {"$push":
+            {"toxicity.qualitative_analysis_labels":
+                {'user':current_user.username,
+                # 'timestamp':datetime.now(),
+                'label':label,
+                'label_sanitized':label_sanitized},
+            },
+        "$set":
+            {"is_coded":True}
+        }
+    )
+    if not r:
+        flash(str(eid)+" not found in "+table, category='error')
+        return redirect(request.referrer)
+
+    # If comment, update parent issue
+    if table == 'christian_toxic_issue_comments':
+        comment = pmongo.db['issue_comments'].find_one({'_id':ObjectId(eid)})
+        issue = pmongo.db['issues'].find_one({'owner':comment['owner'],
+                                        'repo':comment['repo'],
+                                        'number':comment['issue_id']})
+        r = pmongo.db['christian_toxic_issues'].find_one_and_update(
+            {"_id":ObjectId(issue['_id'])},
+            {"$set":
+                {"has_coded_comment":True}
+            }
+        )
+        if not r:
+            flash("Parent issue for comment "+str(eid)+" not found", category='error')
+            return redirect(request.referrer)
+    
+    # Add label to list of labels
+    code = pmongo.db['bogdan_toxic_qualitative_analysis'].find_one({'label':label,
+                                                    'label_sanitized':label_sanitized})
+    if not code:
+        pmongo.db['bogdan_toxic_qualitative_analysis'].insert({'label':label,
+                                                    'label_sanitized':label_sanitized})
+
+    flash(str(eid)+" updated", category='info')
+    return redirect(request.referrer)
+
+
+
+@app.route('/list/<what>')
+@login_required
+def list_issues(what): 
+    with_total = False
+    if what == 'classifier_issues_w_comments':
+        q = query_predicted_issues_w_comments
+    elif what == 'classifier_issues_all':
+        q = query_predicted_issues_all
+    elif what == 'annotated_issues':
+        q = query_annotations
+        with_total = True
+    elif what == 'annotated_issues_toxic':
+        q = query_annotations_toxic
+        with_total = True
+
+    page, per_page, offset = get_page_details()
+    
     cursor = pmongo.db['christian_toxic_issues'].find(q)
 
     issues_for_render = cursor.skip(offset).limit(per_page)
-    
+
+    form = LabelForm()
+    if form.validate_on_submit():
+        element_id = form.element_id.data
+        element_type = form.element_type.data
+        if element_type == 'issue':
+            table = 'christian_toxic_issues'
+        else:
+            table = 'christian_toxic_issue_comments'
+        label = '-'.join(form.element_label.data.lower().split())
+        submit_pressed = form.submit.data  # this will be True if Submit was pressed, False otherwise
+        add_code(table, element_id, label)
+        # do stuff
+        return redirect(request.referrer)
+
+
     issues = {}
     toxicity_labels = {}
     toxicity_label_buttons = {}
+    qualitative_labels = {}
+    qualitative_label_buttons = {}
     issue_titles = {}
     comments = {}
 
@@ -140,9 +233,17 @@ def list_issues(q, offset, per_page, with_total=False):
         issues[str(tissue['_id'])] = issue
 
         toxicity_labels = get_toxicity_labels(toxicity_labels, 
-                                            'christian_toxic_issues', 
+                                            'christian_toxic_issues',
+                                            'manual_labels', 
                                             str(tissue['_id']))
         toxicity_label_buttons = add_toxicity_label_buttons(toxicity_label_buttons, 
+                                            'christian_toxic_issues', 
+                                            str(tissue['_id']))
+        qualitative_labels = get_toxicity_labels(qualitative_labels, 
+                                            'christian_toxic_issues', 
+                                            'qualitative_analysis_labels',
+                                            str(tissue['_id']))
+        qualitative_label_buttons = get_qualitative_label_buttons(qualitative_label_buttons,
                                             'christian_toxic_issues', 
                                             str(tissue['_id']))
     
@@ -161,11 +262,19 @@ def list_issues(q, offset, per_page, with_total=False):
                 .find_one({'_id':ObjectId(comment['_id'])})
             toxicity_labels = get_toxicity_labels(toxicity_labels, 
                                                 'christian_toxic_issue_comments', 
+                                                'manual_labels',
                                                 str(comment['_id']))
             toxicity_label_buttons = add_toxicity_label_buttons(toxicity_label_buttons, 
                                                 'christian_toxic_issue_comments', 
                                                 str(comment['_id']))
-
+            qualitative_labels = get_toxicity_labels(qualitative_labels, 
+                                            'christian_toxic_issue_comments', 
+                                            'qualitative_analysis_labels',
+                                            str(comment['_id']))
+            qualitative_label_buttons = get_qualitative_label_buttons(qualitative_label_buttons,
+                                            'christian_toxic_issue_comments', 
+                                            str(comment['_id']))
+    
             if tcomment:
                 if 'toxicity' in tcomment:
                     comment['toxicity'] = tcomment['toxicity']
@@ -178,87 +287,7 @@ def list_issues(q, offset, per_page, with_total=False):
     if with_total:
         total = cursor.count()
     else:
-        total = None
-
-    return (issues_for_render, 
-            issues, 
-            comments, 
-            toxicity_labels, 
-            toxicity_label_buttons, 
-            issue_titles,
-            total)
-
-
-@app.route('/list_classifier_issues_w_comments')
-@login_required
-def list_classifier_issues_w_comments():
-    # user = User.query.filter_by(username=current_user.username).first()
-    page, per_page, offset = get_page_details()
-
-    (issues_for_render, 
-        issues, 
-        comments, 
-        toxicity_labels, 
-        toxicity_label_buttons, 
-        issue_titles,
-        total) = list_issues(query_predicted_issues_w_comments, offset, per_page, with_total=False)
-
-    pagination = get_pagination(page, per_page, 'per_page', offset, 12345678)
-
-    return render_template('toxic_issues2.html', 
-                            tissues=issues_for_render, 
-                            issues=issues,
-                            comments=comments,
-                            toxic_labels=toxicity_labels,
-                            toxic_label_buttons=toxicity_label_buttons,
-                            issue_titles=issue_titles,
-                            pagination=pagination,
-                            is_toxic=is_toxic,
-                            version=app.config['VERSION'])
-
-
-@app.route('/list_classifier_issues_all')
-@login_required
-def list_classifier_issues_all():
-    # user = User.query.filter_by(username=current_user.username).first()
-    page, per_page, offset = get_page_details()
-
-    (issues_for_render, 
-        issues, 
-        comments, 
-        toxicity_labels, 
-        toxicity_label_buttons, 
-        issue_titles,
-        total) = list_issues(query_predicted_issues_all, offset, per_page)
-
-    pagination = get_pagination(page, per_page, 'per_page', offset, 12345678)
-
-    return render_template('toxic_issues2.html', 
-                            tissues=issues_for_render, 
-                            issues=issues,
-                            comments=comments,
-                            toxic_labels=toxicity_labels,
-                            toxic_label_buttons=toxicity_label_buttons,
-                            issue_titles=issue_titles,
-                            pagination=pagination,
-                            is_toxic=is_toxic,
-                            version=app.config['VERSION'])
-
-
-
-@app.route('/list_annotated_issues')
-@login_required
-def list_annotated_issues():
-    # user = User.query.filter_by(username=current_user.username).first()
-    page, per_page, offset = get_page_details()
-
-    (issues_for_render, 
-        issues, 
-        comments, 
-        toxicity_labels, 
-        toxicity_label_buttons, 
-        issue_titles,
-        total) = list_issues(query_annotations, offset, per_page, with_total=True)
+        total = 12345678
 
     pagination = get_pagination(page, per_page, 'per_page', offset, total)
 
@@ -268,66 +297,43 @@ def list_annotated_issues():
                             comments=comments,
                             toxic_labels=toxicity_labels,
                             toxic_label_buttons=toxicity_label_buttons,
+                            qualitative_labels=qualitative_labels,
+                            qualitative_label_buttons=qualitative_label_buttons,
                             issue_titles=issue_titles,
                             pagination=pagination,
                             is_toxic=is_toxic,
-                            version=app.config['VERSION'])
-
-
-@app.route('/list_annotated_issues_toxic')
-@login_required
-def list_annotated_issues_toxic():
-    # user = User.query.filter_by(username=current_user.username).first()
-    page, per_page, offset = get_page_details()
-
-    (issues_for_render, 
-        issues, 
-        comments, 
-        toxicity_labels, 
-        toxicity_label_buttons, 
-        issue_titles,
-        total) = list_issues(query_annotations_toxic, offset, per_page, with_total=True)
-
-    pagination = get_pagination(page, per_page, 'per_page', offset, total)
-
-    return render_template('toxic_issues2.html', 
-                            tissues=issues_for_render, 
-                            issues=issues,
-                            comments=comments,
-                            toxic_labels=toxicity_labels,
-                            toxic_label_buttons=toxicity_label_buttons,
-                            issue_titles=issue_titles,
-                            pagination=pagination,
-                            is_toxic=is_toxic,
-                            version=app.config['VERSION'])
-
-
-@app.route('/issue/<issueid>')
-def show_issue(issueid):
-    '''issueid must be a string'''
-
-    (issues_for_render, 
-        issues, 
-        all_comments, 
-        toxicity_labels, 
-        toxicity_label_buttons, 
-        issue_titles,
-        total) = list_issues({"_id":ObjectId(issueid)}, 0, 1)
-
-    tissue = issues_for_render[0]
-    issue = issues[issueid]
-    title = issue_titles[issueid]
-    comments = all_comments[issueid]
-
-
-    return render_template('issue.html', 
-                            issueid=issueid,
-                            issue=issue, 
-                            tissue=tissue, 
-                            comments=comments,
-                            is_toxic=is_toxic,
-                            toxic_labels=toxicity_labels,
-                            toxic_label_buttons=toxicity_label_buttons,
                             version=app.config['VERSION'],
-                            title=title)
+                            form=form)
+
+
+
+
+# @app.route('/issue/<issueid>')
+# def show_issue(issueid):
+#     '''issueid must be a string'''
+
+#     (issues_for_render, 
+#         issues, 
+#         all_comments, 
+#         toxicity_labels, 
+#         toxicity_label_buttons, 
+#         issue_titles,
+#         total) = list_issues({"_id":ObjectId(issueid)}, 0, 1)
+
+#     tissue = issues_for_render[0]
+#     issue = issues[issueid]
+#     title = issue_titles[issueid]
+#     comments = all_comments[issueid]
+
+
+#     return render_template('issue.html', 
+#                             issueid=issueid,
+#                             issue=issue, 
+#                             tissue=tissue, 
+#                             comments=comments,
+#                             is_toxic=is_toxic,
+#                             toxic_labels=toxicity_labels,
+#                             toxic_label_buttons=toxicity_label_buttons,
+#                             version=app.config['VERSION'],
+#                             title=title)
 

@@ -1,7 +1,14 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField
-from wtforms.validators import ValidationError, DataRequired, Email, EqualTo
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, HiddenField
+from wtforms.validators import ValidationError, DataRequired, Email, EqualTo, Length
 from app.models import User
+
+
+class LabelForm(FlaskForm):
+    element_id = HiddenField()
+    element_type = HiddenField()
+    element_label = StringField('Label', validators=[Length(max=30)])
+    submit = SubmitField('Add')
 
 
 class LoginForm(FlaskForm):

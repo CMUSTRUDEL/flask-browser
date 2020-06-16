@@ -4,7 +4,6 @@ from werkzeug.urls import url_parse
 
 from app import app
 from app import db, mongo, pmongo
-from app.forms import LoginForm, RegistrationForm
 from app.models import User, GHProfile, TwitterUser, TwitterUserLabel
 from app.models import Issue, IssueComment, ToxicIssue, ToxicIssueComment
 from app.forms import ResetPasswordRequestForm

@@ -69,7 +69,7 @@
 {% macro render_toxicity(tissue, issueid, version) %}
 <p class="classification">{{ "Predicted toxic" if is_toxic(tissue) else "Predicted nontoxic" }}:
     {{ render_mini_toxicity(tissue, issueid, version) }}
-    {% if is_toxic(tissue) %}
+    {% if tissue.toxicity %}
     {% if tissue.toxicity[version] %}
       <a class="btn btn-link" data-toggle="collapse" href="#collapse-{{ issueid }}" role="button" aria-expanded="false" aria-controls="collapse-{{ issueid }}">Details</a>
     {% endif %}
@@ -78,7 +78,7 @@
 <div class="content json">
 <div class="collapse" id="collapse-{{ issueid }}">
   <div class="card card-body">
-      {% if is_toxic(tissue) %}
+      {% if tissue.toxicity %}
       {% if tissue.toxicity[version] %}
         {{ tissue.toxicity[version] | tojson_pretty }}
         <br>
@@ -97,7 +97,8 @@
 
 
 {% macro render_toxicity_actions(label_buttons, id) %}
-<p class="classification">Add labels: 
+<p class="classification">Add prediction labels: 
+  <br>
 {% if label_buttons %}
   {% if label_buttons[id] %}
     {% for label_button in label_buttons[id] %}
@@ -110,9 +111,9 @@
 
 
 {% macro render_toxicity_labels(toxic_labels, id) %}
-<p class="classification">Current labels: 
 {% if toxic_labels %}
 {% if toxic_labels[id]  %}
+  <p class="classification">Current prediction labels: 
     {% for toxic_label in toxic_labels[id]  %}
       {% if toxic_label.label == 'toxic' %}
         <span class="label label-default">{{ toxic_label.user }}</span><span class="label label-danger">{{ toxic_label.label }}</span>
@@ -120,9 +121,26 @@
         <span class="label label-default">{{ toxic_label.user }}</span><span class="label label-info">{{ toxic_label.label }}</span>
       {% endif %}
     {% endfor %}
+  </p>
 {% endif %}
 {% endif %}
-</p>
+{% endmacro %}
+
+
+{% macro render_qualitative_analysis_codes(toxic_labels, id) %}
+{% if toxic_labels %}
+{% if toxic_labels[id]  %}
+    <p class="classification">Current qualitative codes: 
+    {% for toxic_label in toxic_labels[id]  %}
+      {% if toxic_label.label == 'toxic' %}
+        <span class="label label-default">{{ toxic_label.user }}</span><span class="label label-danger">{{ toxic_label.label }}</span>
+      {% else %}
+        <span class="label label-default">{{ toxic_label.user }}</span><span class="label label-info">{{ toxic_label.label }}</span>
+      {% endif %}
+    {% endfor %}
+  </p>
+{% endif %}
+{% endif %}
 {% endmacro %}
 
 
@@ -133,6 +151,67 @@
   </blockquote>
 </div>
 {% endmacro %}
+
+
+{% macro render_issue_header(issue, post_type) %}
+<h4>
+    <a href="https://github.com/{{ issue.owner }}/{{ issue.repo }}/issues/{{ issue.number }}">{{"Issue" if post_type=="issue" else "Comment"}} {{ issue['_id'] }}</a>,
+    {{ issue.updated_at }},
+    by <a href="{{ issue.user.html_url }}">{{ issue.user.login }}</a> [{{ issue.author_association }}]: 
+</h4>
+{% endmacro %}
+
+
+{% macro render_coding_actions(form, post_id, post_type, label_buttons) %}
+<p class="classification">Add qualitative analysis codes: 
+  <br>
+  {% if label_buttons %}
+  {% if label_buttons[post_id] %}
+    {% for label_button in label_buttons[post_id] %}
+        <a href="{{ label_button['url'] }}"><button type="button" class="btn btn-default">{{ label_button['name'] }}</button></a>
+    {% endfor %}
+  {% endif %}
+{% endif %}
+<div class="formwrapper">
+  <form method="POST">
+    {{ form.csrf_token() }}
+    {{ form.element_id(value=post_id) }}
+    {{ form.element_type(value=post_type) }}
+    {{ form.element_label() }}
+    {{ form.submit() }}
+  </form>
+</div>
+</p>
+{% endmacro %}
+
+
+{% macro render_post(post_id, post_type, post_object, toxic_post_object, toxic_labels, toxic_label_buttons, qualitative_labels, qualitative_label_buttons, version, form) %}
+<div class="row">
+  <hr class="mt-3 mb-3"/>
+  <div class="col-xs-8">  
+    {{ render_issue_header(post_object, post_type) }}
+    <div  class="content {{ "toxic" if is_toxic(toxic_post_object) else "nontoxic" }}">
+      <blockquote class="blockquote {{ "toxic" if is_toxic(toxic_post_object) else "nontoxic" }}">
+        {% if post_type == "issue" %}
+          <h4>{{ post_object.title }}</h4>
+        {% endif %}
+        {{ post_object.body|markdown }}
+      </blockquote>
+    </div>
+    {{ render_toxicity(toxic_post_object, post_id, version) }}
+    {{ render_toxicity_labels(toxic_labels, post_id) }}
+    {{ render_qualitative_analysis_codes(qualitative_labels, post_id) }}
+  </div>
+  
+  <div class="col-xs-4">
+    {{ render_toxicity_actions(toxic_label_buttons, post_id) }}
+    <br>
+    {{ render_coding_actions(form, post_id, post_type, qualitative_label_buttons) }}
+    <br>
+  </div>
+</div>
+{% endmacro %}
+
 
 
 {# Macro for creating page number navigation links #}
