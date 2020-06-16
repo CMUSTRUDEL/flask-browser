@@ -183,7 +183,7 @@ def add_code(table, eid, label):
 
 
 
-@app.route('/list/<what>')
+@app.route('/list/<what>', methods=['GET', 'POST'])
 @login_required
 def list_issues(what): 
     with_total = False
