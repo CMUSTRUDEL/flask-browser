@@ -32,6 +32,11 @@ class Config(object):
     SECRET_KEY = '1234567890'
     VERSION = 'v2'
 
+    PHOTO_GH_LABELS = [
+            ['Confirm','valid'], 
+            ['Invalid', 'invalid']
+        ]
+
     TW_GH_LABELS = [
             ['Confirm','valid'], 
             ['Invalid', 'invalid']

@@ -65,6 +65,30 @@ def load_user(id):
 
 
 
+class GHUser(db.Model):
+    __tablename__ = 'ght_users'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    login = db.Column(db.String(255))
+    company = db.Column(db.String(255))
+    created_at = db.Column(db.DateTime(timezone=True), default=datetime.datetime.utcnow)
+    usr_type = db.Column('type', db.String(255))
+    fake = db.Column(db.Boolean)
+    deleted = db.Column(db.Boolean)
+    longitude = db.Column('long', db.Numeric(11,8))
+    latitude = db.Column('lat', db.Numeric(11,8))
+    country_iso = db.Column('country_code', db.String(3))
+    state = db.Column(db.String(255))
+    city = db.Column(db.String(255))
+    location = db.Column(db.String(255))
+
+
+    def __repr__(self):
+        return 'GH user: %s - %s' % \
+                    (self.id, self.login) 
+    
+
+
 class TwitterUser(db.Model):
     __tablename__ = 'mongo_users'
     
@@ -134,6 +158,24 @@ class TwitterUserLabel(db.Model):
     def __repr__(self):
         return 'Label for tw_user %s: %s' % \
                     (self.tw_id, self.text) 
+    
+
+
+class GHPhotoLabel(db.Model):
+    __tablename__ = 'magali_labels'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("browser_users.id"), nullable=False)
+    ght_id = db.Column(db.String(255), db.ForeignKey("ght_users.id"), nullable=False)
+    text = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime(timezone=True), default=datetime.datetime.utcnow)
+    
+    author = db.relationship('User', backref='magali_labels')
+    ght_user = db.relationship('GHUser', backref='magali_labels')
+
+    def __repr__(self):
+        return 'Label for gh_user %s: %s' % \
+                    (self.ght_id, self.text) 
     
 
 

@@ -40,6 +40,35 @@
 {% endmacro %}
 
 
+{% macro render_mysql_labels(tw_labels, tw_user_id) %}
+{% if tw_labels %}
+{% if tw_labels[tw_user_id]  %}
+    {% for tw_label in tw_labels[tw_user_id]  %}
+        {% if tw_label.text == "valid" %}
+            <span class="label label-default">{{ tw_label.author.username }}</span><span class="label label-success">{{ tw_label.text }}</span>
+        {% elif tw_label.text == "invalid" %}
+            <span class="label label-default">{{ tw_label.author.username }}</span><span class="label label-danger">{{ tw_label.text }}</span>
+        {% else %}
+            <span class="label label-default"></span><span class="label label-info">{{ tw_label.text }}</span>
+        {% endif %}
+    {% endfor %}
+{% endif %}
+{% endif %}
+{% endmacro %}
+
+
+{% macro render_mysql_actions(tw_label_buttons, tw_user_id) %}
+{% if tw_label_buttons %}
+{% if tw_label_buttons[tw_user_id] %}
+    {% for tw_label_button in tw_label_buttons[tw_user_id] %}
+        <a href="{{ tw_label_button['url'] }}"><button type="button" class="btn btn-default">{{ tw_label_button['name'] }}</button></a>
+    {% endfor %}
+{% endif %}
+{% endif %}
+{% endmacro %}
+
+
+
 {% macro round_float(x) %}
 {% if x %}
   {{ "{:.2f}".format(x) }}
