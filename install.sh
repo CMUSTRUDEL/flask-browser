@@ -12,6 +12,7 @@ python3 -m venv ${VENV_DIR}
 source ${VENV_DIR}/bin/activate
 pip install -r app/requirements.txt
 
+# install uwsgi and create systemd service
 pip install uwsgi
 
 sudo ln -s ${CURRENT_DIR} ${DEPLOY_DIR}
@@ -34,3 +35,34 @@ WantedBy=multi-user.target
 
 sudo mv ${PROJECT_NAME}.service /etc/systemd/system/
 
+sudo systemctl start ${PROJECT_NAME}
+
+
+# Nginx part
+sudo apt-get install nginx
+echo """
+server {
+        listen 80 default_server;
+        listen [::]:80 default_server;
+
+        # TODO: set up letsencrypt certificates autogen
+
+        server_name _;
+
+        location /static/ {
+            root /var/www/locutus/app/;
+        }
+
+        location / { try_files $uri @locutus; }
+        location @locutus {
+            include uwsgi_params;
+            uwsgi_pass unix:/var/www/locutus/locutus.sock;
+        }
+
+}
+""" > ${PROJECT_NAME}.nginx
+
+sudo mv ${PROJECT_NAME}.nginx /etc/nginx/sites-available/${PROJECT_NAME}
+sudo rm /etc/nginx/sites-enabled/default
+sudo ln -s /etc/nginx/sites-available/${PROJECT_NAME} /etc/nginx/sites-enabled/${PROJECT_NAME}
+sudo service nginx restart
