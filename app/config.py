@@ -29,7 +29,6 @@ class Config(object):
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
     ADMINS = ['vasilescu@cmu.edu']
 
-    SECRET_KEY = '1234567890'
     VERSION = 'v2'
 
     PHOTO_GH_LABELS = [
