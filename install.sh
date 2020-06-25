@@ -6,6 +6,8 @@ PROJECT_NAME=locutus
 CURRENT_DIR=`pwd`
 DEPLOY_DIR=/var/www/locutus
 VENV_DIR=${PROJECT_NAME}.venv
+# port to serve on
+PORT=8040
 
 mkdir ${VENV_DIR}
 python3 -m venv ${VENV_DIR}
@@ -42,8 +44,8 @@ sudo systemctl start ${PROJECT_NAME}
 sudo apt-get install nginx
 echo """
 server {
-        listen 80 default_server;
-        listen [::]:80 default_server;
+        listen ${PORT} default_server;
+        listen [::]:${PORT} default_server;
 
         # TODO: set up letsencrypt certificates autogen
 
