@@ -21,8 +21,9 @@
         </thead>
         <tbody>
                 {% for gh_user in gh_users.items %}
+                {% set my_string = gh_user.login ~ '.jpg' %}
                 <tr>
-                    <td><img src="{{ url_for('download_file', filename='gh_user.login.jpg') }}" height="100"></td>
+                    <td><img src="{{ url_for('download_file', filename=my_string) }}" height="100"></td>
                     <td>{{ gh_user.id }}</td>
                     <td><a href="http://github.com/{{ gh_user.login }}">{{ gh_user.login }}</a></td>
                     <td>{{ gh_user.login }}</td>
