@@ -4,7 +4,7 @@ from werkzeug.urls import url_parse
 
 from app import app
 from app import db, mongo, pmongo
-from app.models import User, GHProfile, TwitterUser, TwitterUserLabel
+from app.models import User, GHProfile, TwitterUser, TwitterUserLabel, GHUser
 from app.models import Issue, IssueComment, ToxicIssue, ToxicIssueComment
 from app.forms import ResetPasswordRequestForm
 from app.forms import ResetPasswordForm
@@ -46,16 +46,21 @@ def label_entry(tw_id, body):
     return redirect(request.referrer)
 
 
-
-@app.route('/twitter')
+@app.route('/twitter/<what>')
 @login_required
-def twitter():
+def twitter(what):
     page = request.args.get('page', 1, type=int)
     user = User.query.filter_by(username=current_user.username).first()
 
-    tw_users = TwitterUser.query\
-        .join(GHProfile, TwitterUser.ght_id==GHProfile.id)\
-        .paginate(page, app.config['RESULTS_PER_PAGE'], False)
+    if what == 'all':
+        tw_users = TwitterUser.query\
+            .join(GHProfile, TwitterUser.ght_id==GHProfile.id)\
+            .paginate(page, app.config['RESULTS_PER_PAGE'], False)
+    elif what == 'different_screen_name':
+        tw_users = TwitterUser.query\
+            .join(GHUser, TwitterUser.ght_id==GHUser.id)\
+            .filter(TwitterUser.tw_img_url!=None)\
+            .paginate(page, app.config['RESULTS_PER_PAGE'], False)
 
     tw_labels = {tw_user.tw_id: TwitterUserLabel.query\
             .filter(TwitterUserLabel.tw_id==tw_user.tw_id)\
@@ -78,7 +83,7 @@ def twitter():
     #     if tw_users.has_next else None
     # prev_url = url_for('twitter', page=tw_users.prev_num) \
     #     if tw_users.has_prev else None
-    return render_template('twitter.html', 
+    return render_template('twitter_local.html', 
                             title='Twitter', 
                             tw_users=tw_users, 
                             tw_labels=tw_labels,
