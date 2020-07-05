@@ -23,7 +23,7 @@
                       <span class="icon-bar"></span>
                       <span class="icon-bar"></span>
                   </button>
-                  <a class="navbar-brand topnav" href="{{ url_for('index') }}">Tardigrade Browser</a>
+                  <a class="navbar-brand topnav" href="{{ url_for('index') }}">Sophie's Browser</a>
               </div>
               <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                   <ul class="nav navbar-nav navbar-right">
@@ -55,20 +55,20 @@
             <a href="{{ url_for('login') }}">Login</a>
             {% else %}
             <a href="{{ url_for('logout') }}">Logout</a>
-            {% endif %}    
+            {% endif %}
         </div> -->
         <div class="content-section">
             <hr>
             {% with messages = get_flashed_messages(with_categories=True) %}
             {% if messages %}
             {% for category, message in messages %}
-                <div class="alert alert-{{ category }}"> 
+                <div class="alert alert-{{ category }}">
                     {{ message }}
                 </div>
             {% endfor %}
             {% endif %}
             {% endwith %}
-            {% block content %}{% endblock %}    
+            {% block content %}{% endblock %}
             <div class="push"></div>
         </div>
         <footer>
