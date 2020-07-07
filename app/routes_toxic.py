@@ -21,7 +21,8 @@ from mongoengine.queryset.visitor import Q
 from app.queries import query_predicted_issues_all, \
                     query_predicted_issues_w_comments, \
                     query_annotations, \
-                    query_annotations_toxic
+                    query_annotations_toxic, \
+                    query_individual_annotations
 
 
 
@@ -33,14 +34,14 @@ def get_page_details():
 
 
 def get_pagination(page, per_page, per_page_parameter, offset, total):
-    return Pagination(page=page, 
+    return Pagination(page=page,
                     per_page=per_page,
-                    per_page_parameter=per_page_parameter, 
+                    per_page_parameter=per_page_parameter,
                     offset=offset,
                     prev_label="Previous",
                     next_label="Next",
-                    total=total, 
-                    css_framework='bootstrap3', 
+                    total=total,
+                    css_framework='bootstrap3',
                     search=False)
 
 
@@ -79,7 +80,6 @@ def label_toxic_entry(table, eid, label):
         score = 1
         is_toxic = True
     reason = label
-
     r = pmongo.db[table].find_one_and_update(
         {"_id":ObjectId(eid)},
         {"$push":
@@ -94,6 +94,7 @@ def label_toxic_entry(table, eid, label):
             "is_labeled_toxic":is_toxic}
         }
     )
+
     if not r:
         flash(str(eid)+" not found in "+table, category='error')
         return redirect(request.referrer)
@@ -126,7 +127,7 @@ def get_qualitative_label_buttons(label_buttons, table, eid):
     labels = [l for l in pmongo.db['bogdan_toxic_qualitative_analysis'].find()]
 
     for l in labels:
-        d = {'url':'/qualitativelabel/%s/%s/%s' % (table, eid, l['label_sanitized']), 
+        d = {'url':'/qualitativelabel/%s/%s/%s' % (table, eid, l['label_sanitized']),
             'name':l['label_sanitized']}
         label_buttons[eid].append(d)
     return label_buttons
@@ -170,7 +171,7 @@ def add_code(table, eid, label):
         if not r:
             flash("Parent issue for comment "+str(eid)+" not found", category='error')
             return redirect(request.referrer)
-    
+
     # Add label to list of labels
     code = pmongo.db['bogdan_toxic_qualitative_analysis'].find_one({'label':label,
                                                     'label_sanitized':label_sanitized})
@@ -185,7 +186,7 @@ def add_code(table, eid, label):
 
 @app.route('/list/<what>', methods=['GET', 'POST'])
 @login_required
-def list_issues(what): 
+def list_issues(what):
     with_total = False
     if what == 'classifier_issues_w_comments':
         q = query_predicted_issues_w_comments
@@ -197,9 +198,13 @@ def list_issues(what):
     elif what == 'annotated_issues_toxic':
         q = query_annotations_toxic
         with_total = True
+    elif what == 'individual_annotated_issues':
+        q = query_individual_annotations(current_user.username)
+        with_total = True
+
 
     page, per_page, offset = get_page_details()
-    
+
     cursor = pmongo.db['christian_toxic_issues'].find(q)
 
     issues_for_render = cursor.skip(offset).limit(per_page)
@@ -232,23 +237,23 @@ def list_issues(what):
                 .find_one({'_id':ObjectId(tissue['_id'])})
         issues[str(tissue['_id'])] = issue
 
-        toxicity_labels = get_toxicity_labels(toxicity_labels, 
+        toxicity_labels = get_toxicity_labels(toxicity_labels,
                                             'christian_toxic_issues',
-                                            'manual_labels', 
+                                            'manual_labels',
                                             str(tissue['_id']))
-        toxicity_label_buttons = add_toxicity_label_buttons(toxicity_label_buttons, 
-                                            'christian_toxic_issues', 
+        toxicity_label_buttons = add_toxicity_label_buttons(toxicity_label_buttons,
+                                            'christian_toxic_issues',
                                             str(tissue['_id']))
-        qualitative_labels = get_toxicity_labels(qualitative_labels, 
-                                            'christian_toxic_issues', 
+        qualitative_labels = get_toxicity_labels(qualitative_labels,
+                                            'christian_toxic_issues',
                                             'qualitative_analysis_labels',
                                             str(tissue['_id']))
         qualitative_label_buttons = get_qualitative_label_buttons(qualitative_label_buttons,
-                                            'christian_toxic_issues', 
+                                            'christian_toxic_issues',
                                             str(tissue['_id']))
-    
-        issue_titles[str(tissue['_id'])] = '{0}/{1}#{2}'.format(issue['owner'], 
-                                                    issue['repo'], 
+
+        issue_titles[str(tissue['_id'])] = '{0}/{1}#{2}'.format(issue['owner'],
+                                                    issue['repo'],
                                                     issue['number'])
 
         comments_cursor = pmongo.db['issue_comments']\
@@ -260,21 +265,21 @@ def list_issues(what):
         for comment in comments_cursor:
             tcomment = pmongo.db['christian_toxic_issue_comments']\
                 .find_one({'_id':ObjectId(comment['_id'])})
-            toxicity_labels = get_toxicity_labels(toxicity_labels, 
-                                                'christian_toxic_issue_comments', 
+            toxicity_labels = get_toxicity_labels(toxicity_labels,
+                                                'christian_toxic_issue_comments',
                                                 'manual_labels',
                                                 str(comment['_id']))
-            toxicity_label_buttons = add_toxicity_label_buttons(toxicity_label_buttons, 
-                                                'christian_toxic_issue_comments', 
+            toxicity_label_buttons = add_toxicity_label_buttons(toxicity_label_buttons,
+                                                'christian_toxic_issue_comments',
                                                 str(comment['_id']))
-            qualitative_labels = get_toxicity_labels(qualitative_labels, 
-                                            'christian_toxic_issue_comments', 
+            qualitative_labels = get_toxicity_labels(qualitative_labels,
+                                            'christian_toxic_issue_comments',
                                             'qualitative_analysis_labels',
                                             str(comment['_id']))
             qualitative_label_buttons = get_qualitative_label_buttons(qualitative_label_buttons,
-                                            'christian_toxic_issue_comments', 
+                                            'christian_toxic_issue_comments',
                                             str(comment['_id']))
-    
+
             if tcomment:
                 if 'toxicity' in tcomment:
                     comment['toxicity'] = tcomment['toxicity']
@@ -291,8 +296,8 @@ def list_issues(what):
 
     pagination = get_pagination(page, per_page, 'per_page', offset, total)
 
-    return render_template('toxic_issues2.html', 
-                            tissues=issues_for_render, 
+    return render_template('toxic_issues2.html',
+                            tissues=issues_for_render,
                             issues=issues,
                             comments=comments,
                             toxic_labels=toxicity_labels,
@@ -312,11 +317,11 @@ def list_issues(what):
 # def show_issue(issueid):
 #     '''issueid must be a string'''
 
-#     (issues_for_render, 
-#         issues, 
-#         all_comments, 
-#         toxicity_labels, 
-#         toxicity_label_buttons, 
+#     (issues_for_render,
+#         issues,
+#         all_comments,
+#         toxicity_labels,
+#         toxicity_label_buttons,
 #         issue_titles,
 #         total) = list_issues({"_id":ObjectId(issueid)}, 0, 1)
 
@@ -326,14 +331,13 @@ def list_issues(what):
 #     comments = all_comments[issueid]
 
 
-#     return render_template('issue.html', 
+#     return render_template('issue.html',
 #                             issueid=issueid,
-#                             issue=issue, 
-#                             tissue=tissue, 
+#                             issue=issue,
+#                             tissue=tissue,
 #                             comments=comments,
 #                             is_toxic=is_toxic,
 #                             toxic_labels=toxicity_labels,
 #                             toxic_label_buttons=toxicity_label_buttons,
 #                             version=app.config['VERSION'],
 #                             title=title)
-
