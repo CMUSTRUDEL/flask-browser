@@ -95,7 +95,8 @@ class TwitterUser(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     tw_id = db.Column(db.String(255))
     mongo_collection = db.Column(db.Integer)
-    ght_id = db.Column(db.BigInteger, db.ForeignKey("profiles.id"), nullable=False)
+    # ght_id = db.Column(db.BigInteger, db.ForeignKey("profiles.id"), nullable=False)
+    ght_id = db.Column(db.BigInteger, db.ForeignKey("ght_users.id"), nullable=False)
     tw_name = db.Column(db.Text)
     tw_screen_name = db.Column(db.Text)
     tw_created_at = db.Column(db.DateTime(timezone=True), default=datetime.datetime.utcnow)
@@ -112,7 +113,8 @@ class TwitterUser(db.Model):
     tw_lang = db.Column(db.Text)
     tw_img_url = db.Column(db.Text)
 
-    gh_profile = db.relationship('GHProfile', backref='mongo_users')
+    # gh_profile = db.relationship('GHProfile', backref='mongo_users')
+    gh_user = db.relationship('GHUser', backref='mongo_users')
 
     def __repr__(self):
         return 'Twitter user: %s - %s' % \
