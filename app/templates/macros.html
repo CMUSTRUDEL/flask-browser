@@ -97,7 +97,17 @@
 
 {% macro render_toxicity(tissue, issueid, version) %}
 <p class="classification">{{ "Predicted toxic" if is_toxic(tissue) else "Predicted nontoxic" }}:
-    {{ render_mini_toxicity(tissue, issueid, version) }}
+    <p>
+    <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseScores" aria-expanded="false" aria-controls="collapseScores">
+      Scores
+    </button>
+  </p>
+  <div class="collapse" id="collapseScores">
+    <div class="card card-body">
+      {{ render_mini_toxicity(tissue, issueid, version) }}
+    </div>
+  </div>
+    <!--{{ render_mini_toxicity(tissue, issueid, version) }}-->
     {% if tissue.toxicity %}
     {% if tissue.toxicity[version] %}
       <a class="btn btn-link" data-toggle="collapse" href="#collapse-{{ issueid }}" role="button" aria-expanded="false" aria-controls="collapse-{{ issueid }}">Details</a>
@@ -142,12 +152,41 @@
 {% macro render_toxicity_labels(toxic_labels, id) %}
 {% if toxic_labels %}
 {% if toxic_labels[id]  %}
-  <p class="classification">Current prediction labels:
+<!--  <p class="classification">Current prediction labels:
     {% for toxic_label in toxic_labels[id]  %}
       {% if toxic_label.label == 'toxic' %}
         <span class="label label-default">{{ toxic_label.user }}</span><span class="label label-danger">{{ toxic_label.label }}</span>
       {% else %}
         <span class="label label-default">{{ toxic_label.user }}</span><span class="label label-info">{{ toxic_label.label }}</span>
+      {% endif %}
+    {% endfor %}
+  </p>
+  -->
+  <p>
+    <button class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#collapsePrediction" aria-expanded="false" aria-controls="collapsePrediction">
+      All prediction labels
+    </button>
+  </p>
+  <div class="collapse" id="collapsePrediction">
+    <div class="card card-body">
+        {% for toxic_label in toxic_labels[id]  %}
+          {% if toxic_label.label == 'toxic' %}
+            <span class="label label-default">{{ toxic_label.user }}</span><span class="label label-danger">{{ toxic_label.label }}</span>
+          {% else %}
+            <span class="label label-default">{{ toxic_label.user }}</span><span class="label label-info">{{ toxic_label.label }}</span>
+          {% endif %}
+        {% endfor %}
+    </div>
+  </div>
+
+  <p class="classification">Your prediction labels:
+    {% for toxic_label in toxic_labels[id]  %}
+      {% if toxic_label.user == current_user.username %}
+          {% if toxic_label.label == 'toxic' %}
+            <span class="label label-default">{{ toxic_label.user }}</span><span class="label label-danger">{{ toxic_label.label }}</span>
+          {% else %}
+            <span class="label label-default">{{ toxic_label.user }}</span><span class="label label-info">{{ toxic_label.label }}</span>
+          {% endif %}
       {% endif %}
     {% endfor %}
   </p>
@@ -159,12 +198,42 @@
 {% macro render_qualitative_analysis_codes(toxic_labels, id) %}
 {% if toxic_labels %}
 {% if toxic_labels[id]  %}
+<!--
     <p class="classification">Current description labels:
     {% for toxic_label in toxic_labels[id]  %}
       {% if toxic_label.label == 'toxic' %}
         <span class="label label-default">{{ toxic_label.user }}</span><span class="label label-danger">{{ toxic_label.label }}</span>
       {% else %}
         <span class="label label-default">{{ toxic_label.user }}</span><span class="label label-info">{{ toxic_label.label }}</span>
+      {% endif %}
+    {% endfor %}
+  </p>
+  -->
+  <p>
+    <button class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#collapseDescription" aria-expanded="false" aria-controls="collapseDescription">
+      All description labels
+    </button>
+  </p>
+  <div class="collapse" id="collapseDescription">
+    <div class="card card-body">
+        {% for toxic_label in toxic_labels[id]  %}
+          {% if toxic_label.label == 'toxic' %}
+            <span class="label label-default">{{ toxic_label.user }}</span><span class="label label-danger">{{ toxic_label.label }}</span>
+          {% else %}
+            <span class="label label-default">{{ toxic_label.user }}</span><span class="label label-info">{{ toxic_label.label }}</span>
+          {% endif %}
+        {% endfor %}
+    </div>
+  </div>
+
+  <p class="classification">Your description labels:
+    {% for toxic_label in toxic_labels[id]  %}
+      {% if toxic_label.user == current_user.username %}
+          {% if toxic_label.label == 'toxic' %}
+            <span class="label label-default">{{ toxic_label.user }}</span><span class="label label-danger">{{ toxic_label.label }}</span>
+          {% else %}
+            <span class="label label-default">{{ toxic_label.user }}</span><span class="label label-info">{{ toxic_label.label }}</span>
+          {% endif %}
       {% endif %}
     {% endfor %}
   </p>

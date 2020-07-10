@@ -203,9 +203,11 @@ def list_issues(what):
         with_total = True
 
 
+
     page, per_page, offset = get_page_details()
 
     cursor = pmongo.db['christian_toxic_issues'].find(q)
+
 
     issues_for_render = cursor.skip(offset).limit(per_page)
 

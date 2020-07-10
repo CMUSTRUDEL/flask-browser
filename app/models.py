@@ -15,7 +15,7 @@ from app import login
 from time import time
 import jwt
 from app import app
-# from .queries import ToxicIssuesQuerySet, IssueCommentsQuerySet, IssueQuerySet
+#from .queries import ToxicIssuesQuerySet, IssueCommentsQuerySet, IssueQuerySet
 
 
 #################################
@@ -32,7 +32,7 @@ class User(UserMixin, db.Model):
     is_admin = db.Column(db.Boolean, default=False)
 
     def __repr__(self):
-        return '<User {}>'.format(self.username)    
+        return '<User {}>'.format(self.username)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -67,7 +67,7 @@ def load_user(id):
 
 class GHUser(db.Model):
     __tablename__ = 'ght_users'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     login = db.Column(db.String(255))
     company = db.Column(db.String(255))
@@ -85,13 +85,13 @@ class GHUser(db.Model):
 
     def __repr__(self):
         return 'GH user: %s - %s' % \
-                    (self.id, self.login) 
-    
+                    (self.id, self.login)
+
 
 
 class TwitterUser(db.Model):
     __tablename__ = 'mongo_users'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     tw_id = db.Column(db.String(255))
     mongo_collection = db.Column(db.Integer)
@@ -118,13 +118,13 @@ class TwitterUser(db.Model):
 
     def __repr__(self):
         return 'Twitter user: %s - %s' % \
-                    (self.tw_id, self.tw_name) 
-    
+                    (self.tw_id, self.tw_name)
+
 
 
 class GHProfile(db.Model):
     __tablename__ = 'profiles'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     login = db.Column(db.String(255))
     name = db.Column(db.Text)
@@ -142,43 +142,43 @@ class GHProfile(db.Model):
 
     def __repr__(self):
         return 'GitHub user: %s - %s' % \
-                    (self.id, self.login) 
-    
+                    (self.id, self.login)
+
 
 
 class TwitterUserLabel(db.Model):
     __tablename__ = 'browser_labels'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("browser_users.id"), nullable=False)
     tw_id = db.Column(db.String(255), db.ForeignKey("mongo_users.tw_id"), nullable=False)
     text = db.Column(db.Text)
     timestamp = db.Column(db.DateTime(timezone=True), default=datetime.datetime.utcnow)
-    
+
     author = db.relationship('User', backref='browser_labels')
 
     def __repr__(self):
         return 'Label for tw_user %s: %s' % \
-                    (self.tw_id, self.text) 
-    
+                    (self.tw_id, self.text)
+
 
 
 class GHPhotoLabel(db.Model):
     __tablename__ = 'magali_labels'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("browser_users.id"), nullable=False)
     ght_id = db.Column(db.String(255), db.ForeignKey("ght_users.id"), nullable=False)
     text = db.Column(db.Text)
     timestamp = db.Column(db.DateTime(timezone=True), default=datetime.datetime.utcnow)
-    
+
     author = db.relationship('User', backref='magali_labels')
     ght_user = db.relationship('GHUser', backref='magali_labels')
 
     def __repr__(self):
         return 'Label for gh_user %s: %s' % \
-                    (self.ght_id, self.text) 
-    
+                    (self.ght_id, self.text)
+
 
 
 #####################################
@@ -209,5 +209,3 @@ class ToxicIssueComment(mongo.DynamicDocument):
         'collection': 'christian_toxic_issue_comments',
         # 'queryset_class': ToxicIssuesQuerySet
     }
-
-
