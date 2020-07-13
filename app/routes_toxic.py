@@ -22,7 +22,7 @@ from app.queries import query_predicted_issues_all, \
                     query_predicted_issues_w_comments, \
                     query_annotations, \
                     query_annotations_toxic, \
-                    query_individual_annotations
+                    query_individual_annotations, query_tolabel
 
 
 
@@ -110,7 +110,8 @@ def label_toxic_entry(table, eid, label):
             {"$set":{
                 "has_labeled_comment":True,
                 "has_labeled_toxic_comment":is_toxic
-                }
+                },
+            "$push": { "toxicity.manual_labeled_comments": { 'user': current_user.username } }
             }
         )
         if not r:
@@ -184,10 +185,16 @@ def add_code(table, eid, label):
 
 
 
+#@app.route('/list/label_toxic')
+#@login_required
+#def label_toxic():
+
+
 @app.route('/list/<what>', methods=['GET', 'POST'])
 @login_required
 def list_issues(what):
     with_total = False
+    order = []
     if what == 'classifier_issues_w_comments':
         q = query_predicted_issues_w_comments
     elif what == 'classifier_issues_all':
@@ -201,12 +208,15 @@ def list_issues(what):
     elif what == 'individual_annotated_issues':
         q = query_individual_annotations(current_user.username)
         with_total = True
+    elif what == "label_toxic":
+        q = query_tolabel(current_user.username)
+        order = [("random", 1)]
 
 
 
     page, per_page, offset = get_page_details()
-
-    cursor = pmongo.db['christian_toxic_issues'].find(q)
+    print(q)
+    cursor = pmongo.db['christian_toxic_issues'].find(q, sort=order)
 
 
     issues_for_render = cursor.skip(offset).limit(per_page)
