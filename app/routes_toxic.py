@@ -195,6 +195,7 @@ def add_code(table, eid, label):
 def list_issues(what):
     with_total = False
     order = []
+    disable_coding = False
     if what == 'classifier_issues_w_comments':
         q = query_predicted_issues_w_comments
     elif what == 'classifier_issues_all':
@@ -211,6 +212,7 @@ def list_issues(what):
     elif what == "label_toxic":
         q = query_tolabel(current_user.username)
         order = [("random", 1)]
+        disable_coding = True
 
 
 
@@ -256,11 +258,13 @@ def list_issues(what):
         toxicity_label_buttons = add_toxicity_label_buttons(toxicity_label_buttons,
                                             'christian_toxic_issues',
                                             str(tissue['_id']))
-        qualitative_labels = get_toxicity_labels(qualitative_labels,
+
+        if not disable_coding:
+            qualitative_labels = get_toxicity_labels(qualitative_labels,
                                             'christian_toxic_issues',
                                             'qualitative_analysis_labels',
                                             str(tissue['_id']))
-        qualitative_label_buttons = get_qualitative_label_buttons(qualitative_label_buttons,
+            qualitative_label_buttons = get_qualitative_label_buttons(qualitative_label_buttons,
                                             'christian_toxic_issues',
                                             str(tissue['_id']))
 
@@ -284,11 +288,13 @@ def list_issues(what):
             toxicity_label_buttons = add_toxicity_label_buttons(toxicity_label_buttons,
                                                 'christian_toxic_issue_comments',
                                                 str(comment['_id']))
-            qualitative_labels = get_toxicity_labels(qualitative_labels,
+
+            if not disable_coding:
+                qualitative_labels = get_toxicity_labels(qualitative_labels,
                                             'christian_toxic_issue_comments',
                                             'qualitative_analysis_labels',
                                             str(comment['_id']))
-            qualitative_label_buttons = get_qualitative_label_buttons(qualitative_label_buttons,
+                qualitative_label_buttons = get_qualitative_label_buttons(qualitative_label_buttons,
                                             'christian_toxic_issue_comments',
                                             str(comment['_id']))
 
