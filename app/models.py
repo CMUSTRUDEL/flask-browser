@@ -69,7 +69,7 @@ class GHUser(db.Model):
     __tablename__ = 'ght_users'
     
     id = db.Column(db.Integer, primary_key=True)
-    login = db.Column(db.String(255))
+    login = db.Column(db.String(255), db.ForeignKey("ght_users_private.login"), nullable=False)
     company = db.Column(db.String(255))
     created_at = db.Column(db.DateTime(timezone=True), default=datetime.datetime.utcnow)
     usr_type = db.Column('type', db.String(255))
@@ -82,9 +82,25 @@ class GHUser(db.Model):
     city = db.Column(db.String(255))
     location = db.Column(db.String(255))
 
+    gh_private = db.relationship('GHUserPrivate', backref='ght_users')
+
 
     def __repr__(self):
         return 'GH user: %s - %s' % \
+                    (self.id, self.login) 
+    
+
+
+class GHUserPrivate(db.Model):
+    __tablename__ = 'ght_users_private'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    login = db.Column(db.String(255))
+    name = db.Column(db.String(255))
+    email = db.Column(db.String(255))
+
+    def __repr__(self):
+        return 'GH user private: %s - %s' % \
                     (self.id, self.login) 
     
 

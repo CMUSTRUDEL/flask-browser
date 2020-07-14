@@ -11,6 +11,8 @@
             <tr>
             <th width="15%"> Tw Avatar </th>
             <th width="15%"> GH Avatar </th>
+            <th width="15%"> CV2 Match </th>
+            <th width="15%"> CV2 Stats </th>
             <th width="10%"> Tw ID </th>
             <th width="15%"> GHT ID </th>
             <th width="15%"> Tw Screen Name </th>
@@ -23,16 +25,21 @@
         </thead>
         <tbody>
                 {% for tw_user in tw_users.items %}
-                {% set my_string = tw_user.gh_user.login ~ '.jpg' %}
+                {% set gh_photo = tw_user.gh_user.login ~ '.jpg' %}
+                {% set tw_photo = tw_user.tw_id ~ '.jpg' %}
+                {% set tw_gh_photo = tw_user.tw_id ~ '_' ~ tw_user.gh_user.login ~ '.jpg' %}
+                {% set tw_gh_stats = cv2_data[(tw_user.tw_id, tw_user.gh_user.login)] %}
                 <tr>
-                    <td><img src="{{ tw_user.tw_img_url}}" height="100"></td>
-                    <td><img src="{{ url_for('download_file', filename=my_string) }}" height="100"></td>
+                    <td><img src="{{ url_for('download_tw', tw_filename=tw_photo) }}" height="100"></td>
+                    <td><img src="{{ url_for('download_gh', gh_filename=gh_photo) }}" height="100"></td>
+                    <td><img src="{{ url_for('download_tw_gh', tw_gh_filename=tw_gh_photo) }}" height="100"></td>
+                    <td>{{ tw_gh_stats }}</td>
                     <td>{{ tw_user.tw_id }}</td>
                     <td>{{ tw_user.ght_id }}</td>
                     <td><a href="http://twitter.com/{{ tw_user.tw_screen_name }}">{{ tw_user.tw_screen_name }}</a></td> 
                     <td><a href="http://github.com/{{ tw_user.gh_user.login }}">{{ tw_user.gh_user.login }}</a></td>
                     <td>{{ tw_user.tw_name }}</td> 
-                    <td>Name</td>
+                    <td>{{ tw_user.gh_user.gh_private.name }}</td>
                     <td>{% include 'labels.html' %}</td>
                     <td>{% include 'actions.html' %}</td>
                 </tr>

@@ -13,11 +13,6 @@ from app.utils import deep_get, is_toxic
 import json
 
 
-@app.route('/uploads/<path:filename>')
-def download_file(filename):
-    return send_from_directory("/ssd_data/bogdan/photo-miner/photos", filename, as_attachment=True)
-
-
 @app.route('/blabel/<gh_id>/<body>')
 @login_required
 def label_black(gh_id, body):

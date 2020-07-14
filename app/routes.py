@@ -1,5 +1,5 @@
 from flask import render_template, flash, redirect, url_for, abort
-from flask import request
+from flask import request, send_from_directory
 from werkzeug.urls import url_parse
 
 from app import app
@@ -17,6 +17,22 @@ from .utils import deep_get, is_toxic
 from bson.objectid import ObjectId
 
 import json
+
+
+
+@app.route('/twuploads/<path:tw_filename>')
+def download_tw(tw_filename):
+    return send_from_directory(app.config['FOLDER_TW'], tw_filename, as_attachment=True)
+
+
+@app.route('/ghuploads/<path:gh_filename>')
+def download_gh(gh_filename):
+    return send_from_directory(app.config['FOLDER_GH'], gh_filename, as_attachment=True)
+
+
+@app.route('/cv2uploads/<path:tw_gh_filename>')
+def download_tw_gh(tw_gh_filename):
+    return send_from_directory(app.config['FOLDER_TW_GH'], tw_gh_filename, as_attachment=True)
 
 
 @app.template_filter('tojson_pretty')

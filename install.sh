@@ -12,6 +12,7 @@ PORT=8040
 mkdir ${VENV_DIR}
 python3 -m venv ${VENV_DIR}
 source ${VENV_DIR}/bin/activate
+pip install --upgrade pip
 pip install -r app/requirements.txt
 
 # install uwsgi and create systemd service
@@ -25,7 +26,7 @@ Description=uWSGI instance to serve Bogdan's pet project
 After=network.target
 
 [Service]
-User=bogdan
+User=bogdanv
 Group=www-data
 WorkingDirectory=${DEPLOY_DIR}
 Environment="PATH=${DEPLOY_DIR}/${VENV_DIR}/bin"
@@ -55,7 +56,7 @@ server {
             root /var/www/locutus/app/;
         }
 
-        location / { try_files $uri @locutus; }
+        location / { try_files \$uri/ @locutus; }
         location @locutus {
             include uwsgi_params;
             uwsgi_pass unix:/var/www/locutus/locutus.sock;

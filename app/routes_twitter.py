@@ -1,10 +1,10 @@
-from flask import render_template, flash, redirect, url_for, abort
+from flask import render_template, flash, redirect, session, url_for, abort
 from flask import request
 from werkzeug.urls import url_parse
 
 from app import app
 from app import db, mongo, pmongo
-from app.models import User, GHProfile, TwitterUser, TwitterUserLabel, GHUser
+from app.models import User, GHProfile, TwitterUser, TwitterUserLabel, GHUser, GHUserPrivate
 from app.models import Issue, IssueComment, ToxicIssue, ToxicIssueComment
 from app.forms import ResetPasswordRequestForm
 from app.forms import ResetPasswordForm
@@ -59,6 +59,7 @@ def twitter(what):
     elif what == 'different_screen_name':
         tw_users = TwitterUser.query\
             .join(GHUser, TwitterUser.ght_id==GHUser.id)\
+            .join(GHUserPrivate, GHUser.login==GHUserPrivate.login)\
             .filter(TwitterUser.tw_img_url!=None)\
             .paginate(page, app.config['RESULTS_PER_PAGE'], False)
 
@@ -87,7 +88,8 @@ def twitter(what):
                             title='Twitter', 
                             tw_users=tw_users, 
                             tw_labels=tw_labels,
-                            tw_label_buttons=tw_label_buttons)
+                            tw_label_buttons=tw_label_buttons,
+                            cv2_data=cv2_data)  # session.get('cv2_data'))
                             # render_label_buttons=render_label_buttons,
                             # next_url=next_url,
                             # prev_url=prev_url)

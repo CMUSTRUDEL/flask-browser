@@ -52,3 +52,8 @@ class Config(object):
             ['Other, maybe, revisit', 'revisit']
         ]
 
+    SESSION_TYPE = 'filesystem'
+
+    FOLDER_TW = os.environ.get('FOLDER_TW')
+    FOLDER_GH = os.environ.get('FOLDER_GH')
+    FOLDER_TW_GH = os.environ.get('FOLDER_TW_GH')
