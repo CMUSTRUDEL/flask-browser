@@ -32,24 +32,24 @@ class Config(object):
     VERSION = 'v2'
 
     PHOTO_GH_LABELS = [
-            ['Confirm','valid'], 
+            ['Confirm','valid'],
             ['Invalid', 'invalid']
         ]
 
     TW_GH_LABELS = [
-            ['Confirm','valid'], 
+            ['Confirm','valid'],
             ['Invalid', 'invalid']
         ]
 
     TOXICITY_LABELS = [
             ['Confirm toxic','toxic'], 
+            ['Not toxic', 'other'],
             ['Potentially problematic', 'maybe'],
-            ['Not toxic -- Non english', 'not-english'], 
+            ['Not toxic -- Non english', 'not-english'],
             ['Not toxic -- Selfdirected', 'self-directed'],
             ['Not toxic -- Owner', 'owner'],
             ['Not toxic -- Mild/colloquial', 'mild'],
-            ['Not toxic -- Other', 'other'],
-            ['Other, maybe, revisit', 'revisit']
+            ['Revisit', 'revisit']
         ]
 
     SESSION_TYPE = 'filesystem'
