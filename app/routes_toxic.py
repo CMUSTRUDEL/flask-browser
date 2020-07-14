@@ -217,7 +217,6 @@ def list_issues(what):
 
 
     page, per_page, offset = get_page_details()
-    print(q)
     cursor = pmongo.db['christian_toxic_issues'].find(q, sort=order)
 
 
