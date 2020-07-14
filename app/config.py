@@ -42,12 +42,12 @@ class Config(object):
         ]
 
     TOXICITY_LABELS = [
-            ['Confirm toxic','toxic'], 
+            ['Confirm toxic','toxic'],
+            ['Not toxic', 'other'],
             ['Potentially problematic', 'maybe'],
             ['Not toxic -- Non english', 'not-english'],
             ['Not toxic -- Selfdirected', 'self-directed'],
             ['Not toxic -- Owner', 'owner'],
             ['Not toxic -- Mild/colloquial', 'mild'],
-            ['Not toxic -- Other', 'other'],
-            ['Other, maybe, revisit', 'revisit']
+            ['Revisit', 'revisit']
         ]
