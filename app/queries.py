@@ -66,3 +66,11 @@ def query_individual_annotations(username):
         {"toxicity.manual_labels.user":username},
         ]
     }
+
+
+def query_tolabel(username):
+  return {"$and": [
+    {"toxicity.manual_labels.user":{"$not": {"$regex": "^"+username+"$"}}},
+    {"toxicity.manual_labeled_comments.user":{"$not": {"$regex": "^"+username+"$"}}},
+    {"toxicity.todo":1}
+  ]}
