@@ -13,6 +13,10 @@ def is_toxic(te):
         return False
     if not "toxicity" in te:
         return False
+    if not app.config['VERSION'] in te['toxicity']:
+        return False
+    if not "score" in te['toxicity'].get(app.config['VERSION']):
+        return False
     return te['toxicity'].get(app.config['VERSION'])['score'] == 1
 
 

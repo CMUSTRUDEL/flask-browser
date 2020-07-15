@@ -111,7 +111,7 @@ def label_toxic_entry(table, eid, label):
                 "has_labeled_comment":True,
                 "has_labeled_toxic_comment":is_toxic
                 },
-            "$push": { "toxicity.manual_labeled_comments": { 'user': current_user.username } }
+            "$push": { "toxicity.manual_labeled_comments": { 'user': current_user.username, 'is_toxic': score } }
             }
         )
         if not r:
