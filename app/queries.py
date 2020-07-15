@@ -62,7 +62,11 @@ query_confirmed_toxic = \
 
 def query_individual_annotations(username):
     return {"$and":[
-        {"has_labeled_comment":True},
+        {"$or":[
+            {"has_labeled_comment":True},
+            {"is_labeled": True}
+            ]
+        },
         {"toxicity.manual_labels.user":username},
         ]
     }

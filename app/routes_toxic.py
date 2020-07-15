@@ -111,7 +111,7 @@ def label_toxic_entry(table, eid, label):
                 "has_labeled_comment":True,
                 "has_labeled_toxic_comment":is_toxic
                 },
-            "$push": { "toxicity.manual_labeled_comments": { 'user': current_user.username } }
+            "$push": { "toxicity.manual_labeled_comments": { 'user': current_user.username, 'is_toxic': score } }
             }
         )
         if not r:
@@ -217,6 +217,7 @@ def list_issues(what):
 
 
     page, per_page, offset = get_page_details()
+    print(q)
     cursor = pmongo.db['christian_toxic_issues'].find(q, sort=order)
 
 
