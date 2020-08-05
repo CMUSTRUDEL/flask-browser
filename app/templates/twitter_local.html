@@ -28,7 +28,7 @@
                 {% set gh_photo = tw_user.gh_user.login ~ '.jpg' %}
                 {% set tw_photo = tw_user.tw_id ~ '.jpg' %}
                 {% set tw_gh_photo = tw_user.tw_id ~ '_' ~ tw_user.gh_user.login ~ '.jpg' %}
-                {% set tw_gh_stats = cv2_data[(tw_user.tw_id, tw_user.gh_user.login)] %}
+                
                 <tr>
                     <td><img src="{{ url_for('download_tw', tw_filename=tw_photo) }}" height="100"></td>
                     <td><img src="{{ url_for('download_gh', gh_filename=gh_photo) }}" height="100"></td>

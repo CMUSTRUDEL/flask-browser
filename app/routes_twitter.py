@@ -88,8 +88,8 @@ def twitter(what):
                             title='Twitter', 
                             tw_users=tw_users, 
                             tw_labels=tw_labels,
-                            tw_label_buttons=tw_label_buttons,
-                            cv2_data=cv2_data)  # session.get('cv2_data'))
+                            tw_label_buttons=tw_label_buttons)
+                            # cv2_data=cv2_data)  # session.get('cv2_data'))
                             # render_label_buttons=render_label_buttons,
                             # next_url=next_url,
                             # prev_url=prev_url)
