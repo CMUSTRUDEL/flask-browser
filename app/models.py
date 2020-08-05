@@ -64,6 +64,26 @@ def load_user(id):
     return User.query.get(int(id))
 
 
+class GHBlackUser(db.Model):
+    __tablename__ = 'bv_namsor_2_0_10_black_08_committers'
+
+    ght_id = db.Column(db.Integer, primary_key=True)
+    login = db.Column(db.String(255), db.ForeignKey("ght_users_private.login"), nullable=False)
+    name = db.Column(db.Text)
+    email = db.Column(db.Text)
+    created_at = db.Column(db.DateTime(timezone=True))
+    usr_type = db.Column('type', db.String(255))
+    fake = db.Column(db.Boolean)
+    deleted = db.Column(db.Boolean)
+    num_commits = db.Column(db.Integer)
+    num_repos_committed = db.Column(db.Integer)
+    last_date_committed = db.Column(db.DateTime(timezone=True))
+    probability_calibrated = db.Column(db.Float)
+
+    def __repr__(self):
+        return 'GH Black user: %s - %s' % \
+                    (self.id, self.login)
+
 
 class GHUser(db.Model):
     __tablename__ = 'ght_users'
