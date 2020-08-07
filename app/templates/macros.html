@@ -142,7 +142,7 @@
 {% if label_buttons %}
   {% if label_buttons[id] %}
     {% for label_button in label_buttons[id] %}
-        <a href="{{ label_button['url'] }}"><button type="button" class="btn btn-default">{{ label_button['name'] }}</button></a>
+        <a href="{{ label_button['url'] }}"><button type="button" class="btn btn-default btn-xs">{{ label_button['name'] }}</button></a>
     {% endfor %}
   {% endif %}
 {% endif %}
@@ -269,7 +269,7 @@
   {% if label_buttons %}
   {% if label_buttons[post_id] %}
     {% for label_button in label_buttons[post_id] %}
-        <a href="{{ label_button['url'] }}"><button type="button" class="btn btn-default">{{ label_button['name'] }}</button></a>
+        <a href="{{ label_button['url'] }}"><button type="button" class="btn btn-default btn-xs">{{ label_button['name'] }}</button></a>
     {% endfor %}
   {% endif %}
 {% endif %}
@@ -289,7 +289,7 @@
 {% macro render_post(post_id, post_type, post_object, toxic_post_object, toxic_labels, toxic_label_buttons, qualitative_labels, qualitative_label_buttons, version, form) %}
 <div class="row">
   <hr class="mt-3 mb-3"/>
-  <div class="col-xs-8">
+  <div class="col-xs-6">
     {{ render_issue_header(post_object, post_type) }}
     <div  class="content {{ "toxic" if is_toxic(toxic_post_object) else "nontoxic" }}">
       <blockquote class="blockquote {{ "toxic" if is_toxic(toxic_post_object) else "nontoxic" }}">
@@ -304,7 +304,7 @@
     {{ render_qualitative_analysis_codes(qualitative_labels, post_id) }}
   </div>
 
-  <div class="col-xs-4">
+  <div class="col-xs-6">
     {{ render_toxicity_actions(toxic_label_buttons, post_id) }}
     <br>
     {{ render_coding_actions(form, post_id, post_type, qualitative_label_buttons) }}
