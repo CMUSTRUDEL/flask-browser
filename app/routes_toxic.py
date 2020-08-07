@@ -22,7 +22,9 @@ from app.queries import query_predicted_issues_all, \
                     query_predicted_issues_w_comments, \
                     query_annotations, \
                     query_annotations_toxic, \
-                    query_individual_annotations, query_tolabel
+                    query_individual_annotations, \
+                    query_tolabel, \
+                    query_predicted_prs_all
 
 
 
@@ -190,6 +192,7 @@ def add_code(table, eid, label):
 #def label_toxic():
 
 
+
 @app.route('/list/<what>', methods=['GET', 'POST'])
 @login_required
 def list_issues(what):
@@ -213,6 +216,8 @@ def list_issues(what):
         q = query_tolabel(current_user.username)
         order = [("random", 1)]
         disable_coding = True
+    elif what == 'classifier_prs_all':
+        q = query_predicted_prs_all
 
 
 
