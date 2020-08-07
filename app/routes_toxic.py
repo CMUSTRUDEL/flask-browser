@@ -24,7 +24,8 @@ from app.queries import query_predicted_issues_all, \
                     query_annotations_toxic, \
                     query_individual_annotations, \
                     query_tolabel, \
-                    query_predicted_prs_all
+                    query_predicted_prs_all, \
+                    query_predicted_prs_w_comments
 
 
 
@@ -218,11 +219,13 @@ def list_issues(what):
         disable_coding = True
     elif what == 'classifier_prs_all':
         q = query_predicted_prs_all
+    elif what == 'classifier_prs_w_comments':
+        q = query_predicted_prs_w_comments
 
 
 
     page, per_page, offset = get_page_details()
-    print(q)
+    
     cursor = pmongo.db['christian_toxic_issues'].find(q, sort=order)
 
 
