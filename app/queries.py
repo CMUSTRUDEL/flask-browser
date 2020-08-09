@@ -54,6 +54,15 @@ query_predicted_prs_w_comments = \
             {"is_pr":True}]
     }
 
+
+query_predicted_prs_w_review_comments = \
+    {"$and":[
+            {"has_toxic_review_comment":True},
+            {"num_comments":{"$gt":0}},
+            {"is_pr":True}]
+    }
+
+
 query_ck_annotations = \
     {"$or":[
         {"toxicity.manual.score":1},
