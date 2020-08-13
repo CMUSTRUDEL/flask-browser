@@ -31,7 +31,7 @@ mail = Mail(app)
 # session = Session(app)
 Session(app)
 
-from app import routes, routes_twitter, routes_toxic, routes_black, models, errors
+from app import routes, routes_twitter, routes_toxic, routes_black, models, errors, stratified
 
 # reader = csv.reader(open('/data1/bogdan/twitter/tw_gh_photo_matches.csv'))
 # cv2_data = {}

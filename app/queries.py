@@ -1,6 +1,15 @@
 from app import app
 from flask_login import current_user
+from app.stratified import high_perspective
+from bson.objectid import ObjectId
 
+query_stratified = \
+    {"$and":[
+        {"_id" : { "$in" : [ObjectId(_id) for _id in high_perspective] } },
+        {"toxicity."+app.config['VERSION']+".orig.persp_raw.detectedLanguages":["en"]},
+        {"toxicity."+app.config['VERSION']+".en":{"$gt": .001}}
+        ]
+    }
 
 query_classifier_toxic = \
     {"$and":[
