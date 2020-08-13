@@ -97,12 +97,12 @@
 
 {% macro render_toxicity(tissue, issueid, version) %}
 <p class="classification">{{ "Predicted toxic" if is_toxic(tissue) else "Predicted nontoxic" }}:
-    <p>
-    <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseScores" aria-expanded="false" aria-controls="collapseScores">
+  <p>
+    <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseScores-{{ issueid }}" aria-expanded="false" aria-controls="collapseScores-{{ issueid }}">
       Scores
     </button>
   </p>
-  <div class="collapse" id="collapseScores">
+  <div class="collapse" id="collapseScores-{{ issueid }}">
     <div class="card card-body">
       {{ render_mini_toxicity(tissue, issueid, version) }}
     </div>
