@@ -1,6 +1,15 @@
 from app import app
 from flask_login import current_user
+from app.stratified import high_perspective
+from bson.objectid import ObjectId
 
+query_stratified = \
+    {"$and":[
+        {"_id" : { "$in" : [ObjectId(_id) for _id in high_perspective] } },
+        {"toxicity."+app.config['VERSION']+".orig.persp_raw.detectedLanguages":["en"]},
+        {"toxicity."+app.config['VERSION']+".en":{"$gt": .001}}
+        ]
+    }
 
 query_classifier_toxic = \
     {"$and":[
@@ -21,6 +30,16 @@ query_predicted_issues_all = \
         ]
     }
 
+query_predicted_prs_all = \
+    {"$and":[
+        {"$or":[
+            query_has_predicted_toxic_comment,
+            query_classifier_toxic,
+            ]
+        },
+        {"is_pr":True}]
+    }
+
 query_predicted_issues_w_comments = \
     {"$and":[
             {"$or":[
@@ -30,6 +49,26 @@ query_predicted_issues_w_comments = \
             },
             {"num_comments":{"$gt":0}}
         ]
+    }
+
+
+query_predicted_prs_w_comments = \
+    {"$and":[
+            {"$or":[
+                query_has_predicted_toxic_comment,
+                query_classifier_toxic,
+                ]
+            },
+            {"num_comments":{"$gt":0}},
+            {"is_pr":True}]
+    }
+
+
+query_predicted_prs_w_review_comments = \
+    {"$and":[
+            {"has_toxic_review_comment":True},
+            {"num_comments":{"$gt":0}},
+            {"is_pr":True}]
     }
 
 

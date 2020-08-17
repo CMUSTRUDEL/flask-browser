@@ -97,12 +97,12 @@
 
 {% macro render_toxicity(tissue, issueid, version) %}
 <p class="classification">{{ "Predicted toxic" if is_toxic(tissue) else "Predicted nontoxic" }}:
-    <p>
-    <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseScores" aria-expanded="false" aria-controls="collapseScores">
+  <p>
+    <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseScores-{{ issueid }}" aria-expanded="false" aria-controls="collapseScores-{{ issueid }}">
       Scores
     </button>
   </p>
-  <div class="collapse" id="collapseScores">
+  <div class="collapse" id="collapseScores-{{ issueid }}">
     <div class="card card-body">
       {{ render_mini_toxicity(tissue, issueid, version) }}
     </div>
@@ -141,7 +141,7 @@
 {% if label_buttons %}
   {% if label_buttons[id] %}
     {% for label_button in label_buttons[id] %}
-        <a href="{{ label_button['url'] }}"><button type="button" class="btn btn-default">{{ label_button['name'] }}</button></a>
+        <a href="{{ label_button['url'] }}"><button type="button" class="btn btn-default btn-xs">{{ label_button['name'] }}</button></a>
     {% endfor %}
   {% endif %}
 {% endif %}
@@ -268,7 +268,7 @@
   {% if label_buttons %}
   {% if label_buttons[post_id] %}
     {% for label_button in label_buttons[post_id] %}
-        <a href="{{ label_button['url'] }}"><button type="button" class="btn btn-default">{{ label_button['name'] }}</button></a>
+        <a href="{{ label_button['url'] }}"><button type="button" class="btn btn-default btn-xs">{{ label_button['name'] }}</button></a>
     {% endfor %}
   {% endif %}
 {% endif %}
