@@ -18,7 +18,7 @@ q_tooheated= {"toxicity.locked":1}
 q_notrecent = { "updated_at": {"$lt": "2020-06-01"} }
 q_fewcomments = { "num_comments": {"$lte": 3} }
 q_manycomments = { "num_comments": {"$gt": 3} }
-q_unlabeled = {"$or": [ 
+q_unlabeled = {"$or": [
 	{"toxicity.manual_labels":{"$exists": 0}},
 	{"toxicity.manual_labels":{"$size": 0}} ]}
 q_partiallylabeled = {"$or": [
@@ -44,7 +44,7 @@ def q(query,num):
 #reset all todos
 db.christian_toxic_issues.update_many({"toxicity.todo":1},{"$set":{"toxicity.todo":0}})
 
-unlabled_with_few_comments=q({ "$and":[q_istoxic, q_notrecent, q_fewcomments, q_unlabeled]},50)
+unlabeled_with_few_comments=q({ "$and":[q_istoxic, q_notrecent, q_fewcomments, q_unlabeled]},50)
 unlabeled_with_many_comments=q({ "$and":[q_istoxic, q_notrecent, q_manycomments, q_unlabeled]},100)
 partially_labeled_with_few_comments=q({ "$and":[q_istoxic, q_notrecent, q_fewcomments, q_partiallylabeled]},100)
 partially_labeled_with_many_comments=q({ "$and":[q_istoxic, q_notrecent, q_manycomments, q_partiallylabeled]},200)
