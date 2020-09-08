@@ -28,7 +28,8 @@ from app.queries import query_predicted_issues_all, \
                     query_predicted_prs_all, \
                     query_predicted_prs_w_comments, \
                     query_predicted_prs_w_review_comments, \
-                    query_stratified
+                    query_stratified, \
+                    query_tolabel_sq
 
 
 
@@ -239,7 +240,7 @@ def list_sampled_sophie_prs():
     
     page, per_page, offset = get_page_details()
     
-    cursor = pmongo.db['christian_toxic_pull_requests'].find(query_stratified, sort=order)
+    cursor = pmongo.db['christian_toxic_pull_requests'].find(query_tolabel_sq(current_user.username), sort=order)
 
     issues_for_render = cursor.skip(offset).limit(per_page)
 

@@ -3,6 +3,9 @@ from flask_login import current_user
 from app.stratified import high_perspective
 from bson.objectid import ObjectId
 
+def query_tolabel_sq(username):
+  return {"toxicity.todo":1}
+
 query_stratified = \
     {"$and":[
         {"_id" : { "$in" : [ObjectId(_id) for _id in high_perspective] } },
