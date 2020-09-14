@@ -9,6 +9,7 @@ from app.models import User
 from app.models import Issue, IssueComment, ToxicIssue, ToxicIssueComment
 from app.forms import LabelForm
 # from app.stratified import high_perspective
+from app.survey import survey
 from flask_login import current_user, login_required
 
 from datetime import datetime
@@ -29,7 +30,8 @@ from app.queries import query_predicted_issues_all, \
                     query_predicted_prs_w_comments, \
                     query_predicted_prs_w_review_comments, \
                     query_stratified, \
-                    query_tolabel_sq
+                    query_tolabel_sq, \
+                    query_survey
 
 
 
@@ -231,16 +233,22 @@ def add_code(table, eid, label):
 
 
 
-@app.route('/list/sampled_sophie_prs', methods=['GET', 'POST'])
+#@app.route('/list/sampled_sophie_prs', methods=['GET', 'POST'])
+@app.route('/list/prs/<what>', methods=['GET', 'POST'])
 @login_required
-def list_sampled_sophie_prs():
+def list_sampled_sophie_prs(what):
     with_total = False
     order = []
     disable_coding = True
+    if what == 'sophie_sampled':
+        q = query_tolabel_sq(current_user.username)
+    elif what == 'sophie_survey':
+        q = query_survey
+    print(what, q)
     
     page, per_page, offset = get_page_details()
     
-    cursor = pmongo.db['christian_toxic_pull_requests'].find(query_tolabel_sq(current_user.username), sort=order)
+    cursor = pmongo.db['christian_toxic_pull_requests'].find(q, sort=order)
 
     issues_for_render = cursor.skip(offset).limit(per_page)
 
