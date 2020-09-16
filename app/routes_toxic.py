@@ -2,23 +2,15 @@ from flask import render_template, flash, redirect, url_for, abort
 from flask import request
 from werkzeug.urls import url_parse
 from flask_paginate import Pagination, get_page_parameter, get_page_args
-
-from app import app
-from app import db, mongo, pmongo
-from app.models import User
-from app.models import Issue, IssueComment, ToxicIssue, ToxicIssueComment
-from app.forms import LabelForm
-# from app.stratified import high_perspective
-from app.survey import survey
 from flask_login import current_user, login_required
-
-from datetime import datetime
+from app import app
+from app import db, pmongo
+from app.forms import LabelForm
+from app.models import User
+from app.survey import survey
 from app.utils import is_toxic
+from datetime import datetime
 from bson.objectid import ObjectId
-
-import json
-
-from mongoengine.queryset.visitor import Q
 
 from app.queries import query_predicted_issues_all, \
                     query_predicted_issues_w_comments, \
@@ -72,10 +64,6 @@ def get_toxicity_labels(labels, table, collection, eid):
             if not seen.get((label['user'], label['label']), False):
                 labels[eid].append(label)
                 seen[(label['user'], label['label'])] = True
-        # # old, shouldn't need these anymore:
-        # reason = r.get('toxicity',{}).get('manual',{}).get('reason', None)
-        # if reason is not None:
-        #     labels[eid].append({'user':'christian', 'label':reason})
     return labels
 
 
@@ -97,10 +85,6 @@ def get_pushback_labels(labels, table, collection, eid):
             if not seen.get((label['user'], label['label']), False):
                 labels[eid].append(label)
                 seen[(label['user'], label['label'])] = True
-        # # old, shouldn't need these anymore:
-        # reason = r.get('toxicity',{}).get('manual',{}).get('reason', None)
-        # if reason is not None:
-        #     labels[eid].append({'user':'christian', 'label':reason})
     return labels
 
 
@@ -976,33 +960,3 @@ def list_issues(what):
                             form=form)
 
 
-
-
-# @app.route('/issue/<issueid>')
-# def show_issue(issueid):
-#     '''issueid must be a string'''
-
-#     (issues_for_render,
-#         issues,
-#         all_comments,
-#         toxicity_labels,
-#         toxicity_label_buttons,
-#         issue_titles,
-#         total) = list_issues({"_id":ObjectId(issueid)}, 0, 1)
-
-#     tissue = issues_for_render[0]
-#     issue = issues[issueid]
-#     title = issue_titles[issueid]
-#     comments = all_comments[issueid]
-
-
-#     return render_template('issue.html',
-#                             issueid=issueid,
-#                             issue=issue,
-#                             tissue=tissue,
-#                             comments=comments,
-#                             is_toxic=is_toxic,
-#                             toxic_labels=toxicity_labels,
-#                             toxic_label_buttons=toxicity_label_buttons,
-#                             version=app.config['VERSION'],
-#                             title=title)

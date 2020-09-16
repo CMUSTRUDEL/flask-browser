@@ -1,21 +1,13 @@
 from flask import render_template, flash, redirect, url_for, abort
 from flask import request, send_from_directory
 from werkzeug.urls import url_parse
-
 from app import app
-from app import db, mongo, pmongo
 from app.forms import LoginForm, RegistrationForm
 from app.models import User
 from app.forms import ResetPasswordRequestForm
 from app.forms import ResetPasswordForm
 from app.flemail import send_password_reset_email
-
 from flask_login import current_user, login_user, logout_user, login_required
-
-from datetime import datetime
-from .utils import deep_get, is_toxic
-from bson.objectid import ObjectId
-
 import json
 
 

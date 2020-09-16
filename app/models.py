@@ -1,21 +1,12 @@
-# import sqlalchemy as sa
-# from sqlalchemy import Column, Table
-# from sqlalchemy import Integer, String, Boolean, BigInteger, DateTime, Text
-# from sqlalchemy.dialects.mysql import TIMESTAMP
-# from sqlalchemy.orm import relationship, backref
-#from sqlalchemy.ext.associationproxy import association_proxy
-# from twitterDB.base import Base
-
-from app import db, mongo
-from dateutil import parser
+from app import db #, mongo
+from app import app
+from app import login
 import datetime
+from time import time
+from dateutil import parser
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
-from app import login
-from time import time
 import jwt
-from app import app
-#from .queries import ToxicIssuesQuerySet, IssueCommentsQuerySet, IssueQuerySet
 
 
 #################################
@@ -217,31 +208,3 @@ class GHPhotoLabel(db.Model):
 
 
 
-#####################################
-#### GHTorrent Mongo Collections ####
-#####################################
-
-class Issue(mongo.DynamicDocument):
-    meta = {
-        'collection': 'issues',
-        # 'queryset_class': IssueQuerySet
-    }
-
-class IssueComment(mongo.DynamicDocument):
-    meta = {
-        'collection': 'issue_comments',
-        # 'queryset_class': IssueCommentsQuerySet
-    }
-
-
-class ToxicIssue(mongo.DynamicDocument):
-    meta = {
-        'collection': 'christian_toxic_issues',
-        # 'queryset_class': ToxicIssuesQuerySet
-    }
-
-class ToxicIssueComment(mongo.DynamicDocument):
-    meta = {
-        'collection': 'christian_toxic_issue_comments',
-        # 'queryset_class': ToxicIssuesQuerySet
-    }
