@@ -49,8 +49,15 @@ class Config(object):
             ['Not toxic -- Selfdirected', 'self-directed'],
             ['Not toxic -- Owner', 'owner'],
             ['Not toxic -- Mild/colloquial', 'mild'],
+            ['Not toxic -- Tooldirected', 'tool-directed'],
             ['Revisit', 'revisit']
         ]
+
+    PUSHBACK_LABELS = [
+            ['Pushback', 'pushback'],
+            ['Not pushback', 'not-pushback']
+        ]
+
 
     SESSION_TYPE = 'filesystem'
 

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% from "macros.html" import render_post with context %}
+
+{% block content %}
+
+<div class="container">
+
+    <div class="center">
+        {{ pagination.links }}
+    </div>
+        
+    {% for tpr in tprs %}
+        {% set prid = tpr['_id']|string %}
+        {% set pr = prs[prid] %}
+
+        <h3><span class="fab fa-github"></span>
+            <a href="https://github.com/{{ pr.owner }}/{{ pr.repo }}/prs/{{ pr.number }}">{{ pr.owner }}/{{ pr.repo }} #{{ pr.number }}</a>
+        </h3>
+          
+        {{ render_post(prid, "pr", pr, tpr, pushback_labels,
+        pushback_label_buttons, qualitative_labels, qualitative_label_buttons, version, form) }}
+        
+        {% for comment in comments[prid] %}
+            {% set commentid = comment['_id']|string %}
+            {{ render_post(commentid, "comment", comment, comment,
+            pushback_labels, pushback_label_buttons, qualitative_labels, qualitative_label_buttons, version, form) }}
+        {% endfor %}
+
+    {% endfor %}
+
+    <div class="center">
+        {{ pagination.links }}
+    </div>
+    
+</div>
+
+
+{% endblock %}
+

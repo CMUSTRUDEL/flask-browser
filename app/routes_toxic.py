@@ -79,6 +79,121 @@ def get_toxicity_labels(labels, table, collection, eid):
     return labels
 
 
+def add_pushback_label_buttons(label_buttons, table, eid):
+    label_buttons.setdefault(eid, [])
+    for l in app.config['PUSHBACK_LABELS']:
+        d = {'url':'/pushbacklabel/%s/%s/%s' % (table, eid, l[1]), 'name':l[0]}
+        label_buttons[eid].append(d)
+    return label_buttons
+
+
+def get_pushback_labels(labels, table, collection, eid):
+    labels.setdefault(eid, [])
+    r = pmongo.db[table].find_one({"_id":ObjectId(eid)})
+    if r:
+        llist = r.get('pushback',{}).get(collection,[])
+        seen = {}
+        for label in llist:
+            if not seen.get((label['user'], label['label']), False):
+                labels[eid].append(label)
+                seen[(label['user'], label['label'])] = True
+        # # old, shouldn't need these anymore:
+        # reason = r.get('toxicity',{}).get('manual',{}).get('reason', None)
+        # if reason is not None:
+        #     labels[eid].append({'user':'christian', 'label':reason})
+    return labels
+
+
+@app.route('/pushbacklabel/<table>/<eid>/<label>')
+@login_required
+def label_pushback_entry(table, eid, label):
+    score = 0
+    is_pushback = False
+    if label=="pushback":
+        score = 1
+        is_pushback = True
+    reason = label
+    r = pmongo.db[table].find_one_and_update(
+        {"_id":ObjectId(eid)},
+        {"$push":
+            {"pushback.manual_labels":
+                {'user':current_user.username,
+                'timestamp':datetime.now(),
+                'label':reason,
+                'is_pubshback':score},
+            },
+        "$set":
+            {"has_pb_label":True,
+            "is_labeled_pushback":is_pushback}
+        }
+    )
+
+    if not r:
+        flash(str(eid)+" not found in "+table, category='error')
+        return redirect(request.referrer)
+
+    # if comment, update parent issue
+    if table == 'christian_toxic_issue_comments':
+        comment = pmongo.db['issue_comments'].find_one({'_id':ObjectId(eid)})
+        issue = pmongo.db['issues'].find_one({'owner':comment['owner'],
+                                        'repo':comment['repo'],
+                                        'number':comment['issue_id']})
+        r1 = pmongo.db['christian_toxic_issues'].find_one_and_update(
+            {"_id":ObjectId(issue['_id'])},
+            {"$set":{
+                "has_pb_labeled_comment":True,
+                "has_labeled_pb_comment":is_pushback
+                },
+            "$push": { "pushback.manual_labeled_comments": { 'user': current_user.username, 'is_pushback': score } }
+            }
+        )
+        r2 = pmongo.db['christian_toxic_pull_requests'].find_one_and_update(
+            {"_id":ObjectId(issue['_id'])},
+            {"$set":{
+                "has_pb_labeled_comment":True,
+                "has_labeled_pb_comment":is_pushback
+                },
+            "$push": { "pushback.manual_labeled_comments": { 'user':
+            current_user.username, 'is_pushback': score } }
+            }
+        )
+        if not r1 and not r2:
+            flash("Parent issue / PR for comment "+str(eid)+" not found", category='error')
+            return redirect(request.referrer)
+
+    # if review comment, update parent PR
+    if table == 'christian_toxic_pull_request_comments':
+        comment = pmongo.db['pull_request_comments'].find_one({'_id':ObjectId(eid)})
+        issue = pmongo.db['pull_requests'].find_one({'owner':comment['owner'],
+                                        'repo':comment['repo'],
+                                        'number':comment['pullreq_id']})
+        r1 = pmongo.db['christian_toxic_issues'].find_one_and_update(
+            {"_id":ObjectId(issue['_id'])},
+            {"$set":{
+                "has_pb_labeled_comment":True,
+                "has_labeled_pb_comment":is_pushback
+                },
+            "$push": { "pushback.manual_labeled_comments": { 'user': current_user.username, 'is_pushback': score } }
+            }
+        )
+        r2 = pmongo.db['christian_toxic_pull_requests'].find_one_and_update(
+            {"_id":ObjectId(issue['_id'])},
+            {"$set":{
+                "has_pb_labeled_comment":True,
+                "has_labeled_pb_comment":is_pushback
+                },
+            "$push": { "pushback.manual_labeled_comments": { 'user': current_user.username, 'is_pushback': score } }
+            }
+        )
+        if not r1 and not r2:
+            flash("Parent issue / PR for comment "+str(eid)+" not found", category='error')
+            return redirect(request.referrer)
+
+
+
+    flash(str(eid)+" updated", category='info')
+    return redirect(request.referrer)
+
 
 @app.route('/toxiclabel/<table>/<eid>/<label>')
 @login_required
@@ -233,18 +348,171 @@ def add_code(table, eid, label):
 
 
 
-#@app.route('/list/sampled_sophie_prs', methods=['GET', 'POST'])
-@app.route('/list/prs/<what>', methods=['GET', 'POST'])
+@app.route('/list/sampled_sophie_survey', methods=['GET', 'POST'])
 @login_required
-def list_sampled_sophie_prs(what):
+def list_sampled_sophie_survey():
     with_total = False
     order = []
     disable_coding = True
-    if what == 'sophie_sampled':
-        q = query_tolabel_sq(current_user.username)
-    elif what == 'sophie_survey':
-        q = query_survey
-    print(what, q)
+    q = query_tolabel_sq(current_user.username)
+    
+    page, per_page, offset = get_page_details()
+    
+    cursor = pmongo.db['christian_toxic_pull_requests'].find(q, sort=order)
+
+    issues_for_render = cursor.skip(offset).limit(per_page)
+
+    form = LabelForm()
+    if form.validate_on_submit():
+        element_id = form.element_id.data
+        element_type = form.element_type.data
+        if element_type == 'pull_request':
+            table = 'christian_toxic_pull_requests'
+        elif element_type == 'pull_request_comment':
+            table = 'christian_toxic_issue_comments'
+        else:
+            table = 'christian_toxic_pull_request_comments'
+        label = '-'.join(form.element_label.data.lower().split())
+        submit_pressed = form.submit.data  # this will be True if Submit was pressed, False otherwise
+        add_code(table, element_id, label)
+        # do stuff
+        return redirect(request.referrer)
+
+
+    prs = {}
+    pushback_labels = {}
+    pushback_label_buttons = {}
+    qualitative_labels = {}
+    qualitative_label_buttons = {}
+    issue_titles = {}
+    comments = {}
+
+    for tissue in issues_for_render:
+        issue = pmongo.db['pull_requests']\
+                .find_one({'_id':ObjectId(tissue['_id'])})
+        prs[str(tissue['_id'])] = issue
+
+        pushback_labels = get_pushback_labels(pushback_labels,
+                                            'christian_toxic_pull_requests',
+                                            'manual_labels',
+                                            str(tissue['_id']))
+        pushback_label_buttons = add_pushback_label_buttons(pushback_label_buttons,
+                                            'christian_toxic_pull_requests',
+                                            str(tissue['_id']))
+
+        if not disable_coding:
+            qualitative_labels = get_pushback_labels(qualitative_labels,
+                                            'christian_toxic_pull_requests',
+                                            'qualitative_analysis_labels',
+                                            str(tissue['_id']))
+            qualitative_label_buttons = get_qualitative_label_buttons(qualitative_label_buttons,
+                                            'christian_toxic_pull_requests',
+                                            str(tissue['_id']))
+
+        issue_titles[str(tissue['_id'])] = '{0}/{1}#{2}'.format(issue['owner'],
+                                                    issue['repo'],
+                                                    issue['number'])
+
+        comments_cursor = pmongo.db['issue_comments']\
+            .find({'owner':issue['owner'],
+                    'repo':issue['repo'],
+                    'issue_id':issue['number']})
+
+        comments.setdefault(str(issue['_id']), [])
+        for comment in comments_cursor:
+            tcomment = pmongo.db['christian_toxic_issue_comments']\
+                .find_one({'_id':ObjectId(comment['_id'])})
+            pushback_labels = get_pushback_labels(pushback_labels,
+                                                'christian_toxic_issue_comments',
+                                                'manual_labels',
+                                                str(comment['_id']))
+            pushback_label_buttons = add_pushback_label_buttons(pushback_label_buttons,
+                                                'christian_toxic_issue_comments',
+                                                str(comment['_id']))
+
+            if not disable_coding:
+                qualitative_labels = get_pushback_labels(qualitative_labels,
+                                            'christian_toxic_issue_comments',
+                                            'qualitative_analysis_labels',
+                                            str(comment['_id']))
+                qualitative_label_buttons = get_qualitative_label_buttons(qualitative_label_buttons,
+                                            'christian_toxic_issue_comments',
+                                            str(comment['_id']))
+
+            if tcomment:
+                if 'toxicity' in tcomment:
+                    comment['toxicity'] = tcomment['toxicity']
+
+            comments[str(tissue['_id'])] += [comment]
+
+
+        
+        review_comments_cursor = pmongo.db['pull_request_comments']\
+            .find({'owner':issue['owner'],
+                    'repo':issue['repo'],
+                    'pullreq_id':issue['number']})
+
+        comments.setdefault(str(issue['_id']), [])
+        for comment in review_comments_cursor:
+            tcomment = pmongo.db['christian_toxic_pull_request_comments']\
+                .find_one({'_id':ObjectId(comment['_id'])})
+            pushback_labels = get_pushback_labels(pushback_labels,
+                                                'christian_toxic_pull_request_comments',
+                                                'manual_labels',
+                                                str(comment['_id']))
+            pushback_label_buttons = add_pushback_label_buttons(pushback_label_buttons,
+                                                'christian_toxic_pull_request_comments',
+                                                str(comment['_id']))
+
+            if not disable_coding:
+                qualitative_labels = get_pushback_labels(qualitative_labels,
+                                            'christian_toxic_pull_request_comments',
+                                            'qualitative_analysis_labels',
+                                            str(comment['_id']))
+                qualitative_label_buttons = get_qualitative_label_buttons(qualitative_label_buttons,
+                                            'christian_toxic_pull_request_comments',
+                                            str(comment['_id']))
+
+            if tcomment:
+                if 'toxicity' in tcomment:
+                    comment['toxicity'] = tcomment['toxicity']
+
+            comments[str(tissue['_id'])] += [comment]
+
+        
+        comments[str(issue['_id'])] = sorted(comments[str(issue['_id'])], key=lambda e: e['created_at'])
+
+    cursor.rewind()
+    prs_for_render = cursor.skip(offset).limit(per_page)
+
+    if with_total:
+        total = cursor.count()
+    else:
+        total = 12345678
+
+    pagination = get_pagination(page, per_page, 'per_page', offset, total)
+
+    return render_template('pushback.html',
+                            tprs=prs_for_render,
+                            prs=prs,
+                            comments=comments,
+                            pushback_labels=pushback_labels,
+                            pushback_label_buttons=pushback_label_buttons,
+                            qualitative_labels=qualitative_labels,
+                            qualitative_label_buttons=qualitative_label_buttons,
+                            pr_titles=issue_titles,
+                            pagination=pagination,
+                            is_toxic=is_toxic,
+                            version=app.config['VERSION'],
+                            form=form)
+
+@app.route('/list/sampled_sophie_prs', methods=['GET', 'POST'])
+@login_required
+def list_sampled_sophie_prs():
+    with_total = False
+    order = []
+    disable_coding = True
+    q = query_tolabel_sq(current_user.username)
     
     page, per_page, offset = get_page_details()
     
@@ -378,7 +646,7 @@ def list_sampled_sophie_prs(what):
     if with_total:
         total = cursor.count()
     else:
-        total = 12345678
+        total = 12345678 
 
     pagination = get_pagination(page, per_page, 'per_page', offset, total)
 
