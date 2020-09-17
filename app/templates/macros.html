@@ -164,11 +164,11 @@
   </p>
   -->
   <p>
-    <button class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#collapsePrediction" aria-expanded="false" aria-controls="collapsePrediction">
+    <button class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#collapsePrediction-{{ id }}" aria-expanded="false" aria-controls="collapsePrediction-{{ id }}">
       All prediction labels
     </button>
   </p>
-  <div class="collapse" id="collapsePrediction">
+  <div class="collapse" id="collapsePrediction-{{ id }}">
     <div class="card card-body">
         {% for toxic_label in toxic_labels[id]  %}
           {% if toxic_label.label == 'toxic' %}
@@ -211,11 +211,11 @@
   </p>
   -->
   <p>
-    <button class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#collapseDescription" aria-expanded="false" aria-controls="collapseDescription">
+    <button class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#collapseDescription-{{ id }}" aria-expanded="false" aria-controls="collapseDescription-{{ id }}">
       All description labels
     </button>
   </p>
-  <div class="collapse" id="collapseDescription">
+  <div class="collapse" id="collapseDescription-{{ id }}">
     <div class="card card-body">
         {% for toxic_label in toxic_labels[id]  %}
           {% if toxic_label.label == 'toxic' %}

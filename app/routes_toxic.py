@@ -1,3 +1,6 @@
+"""
+Foo
+"""
 from flask import render_template, flash, redirect, url_for, abort
 from flask import request
 from werkzeug.urls import url_parse
@@ -7,10 +10,12 @@ from app import app
 from app import db, pmongo
 from app.forms import LabelForm
 from app.models import User
-from app.survey import survey
 from app.utils import is_toxic
 from datetime import datetime
 from bson.objectid import ObjectId
+
+# Sophie's handpicked list of PR ids 
+from app.survey import survey
 
 from app.queries import query_predicted_issues_all, \
                     query_predicted_issues_w_comments, \
@@ -46,19 +51,35 @@ def get_pagination(page, per_page, per_page_parameter, offset, total):
                     search=False)
 
 
-def add_toxicity_label_buttons(label_buttons, table, eid):
+
+def get_label_buttons(label_buttons, endpoint, labels, collection, eid):
+    """
+    Creates endpoints with the prefix 'endpoint' to assign qualitative 
+    analysis codes to a given document 'eid' in a given 'collection'. 
+    The codes are taken from 'labels' (typically part of the app config).
+    Appends the new endpoints to an existing dictionary 'label_buttons'.
+    """
     label_buttons.setdefault(eid, [])
-    for l in app.config['TOXICITY_LABELS']:
-        d = {'url':'/toxiclabel/%s/%s/%s' % (table, eid, l[1]), 'name':l[0]}
+    for l in labels:
+        d = {'url':'/%s/%s/%s/%s' % (endpoint, collection, eid, l[1]), 
+            'name':l[0]}
         label_buttons[eid].append(d)
     return label_buttons
 
 
-def get_toxicity_labels(labels, table, collection, eid):
+
+def get_labels(labels, collection, prefix, header, eid):
+    """
+    Retrieves all the unique labels of type 'header' (e.g., 
+    qualitative_analysis_labels) nested under 'prefix' (e.g., 
+    'toxicity'), that have been assigned to a given document
+    'eid' in a given 'collection' (e.g., christian_toxic_issues).
+    Appends the labels to an existing dictionary 'labels'.
+    """
     labels.setdefault(eid, [])
-    r = pmongo.db[table].find_one({"_id":ObjectId(eid)})
+    r = pmongo.db[collection].find_one({"_id":ObjectId(eid)})
     if r:
-        llist = r.get('toxicity',{}).get(collection,[])
+        llist = r.get(prefix, {}).get(header,[])
         seen = {}
         for label in llist:
             if not seen.get((label['user'], label['label']), False):
@@ -67,25 +88,25 @@ def get_toxicity_labels(labels, table, collection, eid):
     return labels
 
 
-def add_pushback_label_buttons(label_buttons, table, eid):
+
+def get_label_buttons_from_db(label_buttons, endpoint, labels, collection, eid):
+    """
+    Creates endpoints with the prefix 'endpoint' to assign qualitative 
+    analysis codes to a given document 'eid' in a given 'collection'. 
+    The codes are taken from the database (so they can change dynamically).
+    Appends the new endpoints to an existing dictionary 'label_buttons'.
+    """
     label_buttons.setdefault(eid, [])
-    for l in app.config['PUSHBACK_LABELS']:
-        d = {'url':'/pushbacklabel/%s/%s/%s' % (table, eid, l[1]), 'name':l[0]}
+    # The 'labels' argument is not currently used
+    labels = [l for l in pmongo.db['bogdan_toxic_qualitative_analysis'].find()]
+
+    for l in labels:
+        d = {'url':'/%s/%s/%s/%s' % (endpoint, collection, eid, l['label_sanitized']),
+            'name':l['label_sanitized']}
         label_buttons[eid].append(d)
     return label_buttons
 
 
-def get_pushback_labels(labels, table, collection, eid):
-    labels.setdefault(eid, [])
-    r = pmongo.db[table].find_one({"_id":ObjectId(eid)})
-    if r:
-        llist = r.get('pushback',{}).get(collection,[])
-        seen = {}
-        for label in llist:
-            if not seen.get((label['user'], label['label']), False):
-                labels[eid].append(label)
-                seen[(label['user'], label['label'])] = True
-    return labels
 
 
 @app.route('/pushbacklabel/<table>/<eid>/<label>')
@@ -270,17 +291,6 @@ def label_toxic_entry(table, eid, label):
 
 
 
-def get_qualitative_label_buttons(label_buttons, table, eid):
-    label_buttons.setdefault(eid, [])
-    labels = [l for l in pmongo.db['bogdan_toxic_qualitative_analysis'].find()]
-
-    for l in labels:
-        d = {'url':'/qualitativelabel/%s/%s/%s' % (table, eid, l['label_sanitized']),
-            'name':l['label_sanitized']}
-        label_buttons[eid].append(d)
-    return label_buttons
-
-
 
 @app.route('/qualitativelabel/<table>/<eid>/<label>')
 @login_required
@@ -332,486 +342,6 @@ def add_code(table, eid, label):
 
 
 
-@app.route('/list/sampled_sophie_survey', methods=['GET', 'POST'])
-@login_required
-def list_sampled_sophie_survey():
-    with_total = False
-    order = []
-    disable_coding = True
-    q = query_tolabel_sq(current_user.username)
-    
-    page, per_page, offset = get_page_details()
-    
-    cursor = pmongo.db['christian_toxic_pull_requests'].find(q, sort=order)
-
-    issues_for_render = cursor.skip(offset).limit(per_page)
-
-    form = LabelForm()
-    if form.validate_on_submit():
-        element_id = form.element_id.data
-        element_type = form.element_type.data
-        if element_type == 'pull_request':
-            table = 'christian_toxic_pull_requests'
-        elif element_type == 'pull_request_comment':
-            table = 'christian_toxic_issue_comments'
-        else:
-            table = 'christian_toxic_pull_request_comments'
-        label = '-'.join(form.element_label.data.lower().split())
-        submit_pressed = form.submit.data  # this will be True if Submit was pressed, False otherwise
-        add_code(table, element_id, label)
-        # do stuff
-        return redirect(request.referrer)
-
-
-    prs = {}
-    pushback_labels = {}
-    pushback_label_buttons = {}
-    qualitative_labels = {}
-    qualitative_label_buttons = {}
-    issue_titles = {}
-    comments = {}
-
-    for tissue in issues_for_render:
-        issue = pmongo.db['pull_requests']\
-                .find_one({'_id':ObjectId(tissue['_id'])})
-        prs[str(tissue['_id'])] = issue
-
-        pushback_labels = get_pushback_labels(pushback_labels,
-                                            'christian_toxic_pull_requests',
-                                            'manual_labels',
-                                            str(tissue['_id']))
-        pushback_label_buttons = add_pushback_label_buttons(pushback_label_buttons,
-                                            'christian_toxic_pull_requests',
-                                            str(tissue['_id']))
-
-        if not disable_coding:
-            qualitative_labels = get_pushback_labels(qualitative_labels,
-                                            'christian_toxic_pull_requests',
-                                            'qualitative_analysis_labels',
-                                            str(tissue['_id']))
-            qualitative_label_buttons = get_qualitative_label_buttons(qualitative_label_buttons,
-                                            'christian_toxic_pull_requests',
-                                            str(tissue['_id']))
-
-        issue_titles[str(tissue['_id'])] = '{0}/{1}#{2}'.format(issue['owner'],
-                                                    issue['repo'],
-                                                    issue['number'])
-
-        comments_cursor = pmongo.db['issue_comments']\
-            .find({'owner':issue['owner'],
-                    'repo':issue['repo'],
-                    'issue_id':issue['number']})
-
-        comments.setdefault(str(issue['_id']), [])
-        for comment in comments_cursor:
-            tcomment = pmongo.db['christian_toxic_issue_comments']\
-                .find_one({'_id':ObjectId(comment['_id'])})
-            pushback_labels = get_pushback_labels(pushback_labels,
-                                                'christian_toxic_issue_comments',
-                                                'manual_labels',
-                                                str(comment['_id']))
-            pushback_label_buttons = add_pushback_label_buttons(pushback_label_buttons,
-                                                'christian_toxic_issue_comments',
-                                                str(comment['_id']))
-
-            if not disable_coding:
-                qualitative_labels = get_pushback_labels(qualitative_labels,
-                                            'christian_toxic_issue_comments',
-                                            'qualitative_analysis_labels',
-                                            str(comment['_id']))
-                qualitative_label_buttons = get_qualitative_label_buttons(qualitative_label_buttons,
-                                            'christian_toxic_issue_comments',
-                                            str(comment['_id']))
-
-            if tcomment:
-                if 'toxicity' in tcomment:
-                    comment['toxicity'] = tcomment['toxicity']
-
-            comments[str(tissue['_id'])] += [comment]
-
-
-        
-        review_comments_cursor = pmongo.db['pull_request_comments']\
-            .find({'owner':issue['owner'],
-                    'repo':issue['repo'],
-                    'pullreq_id':issue['number']})
-
-        comments.setdefault(str(issue['_id']), [])
-        for comment in review_comments_cursor:
-            tcomment = pmongo.db['christian_toxic_pull_request_comments']\
-                .find_one({'_id':ObjectId(comment['_id'])})
-            pushback_labels = get_pushback_labels(pushback_labels,
-                                                'christian_toxic_pull_request_comments',
-                                                'manual_labels',
-                                                str(comment['_id']))
-            pushback_label_buttons = add_pushback_label_buttons(pushback_label_buttons,
-                                                'christian_toxic_pull_request_comments',
-                                                str(comment['_id']))
-
-            if not disable_coding:
-                qualitative_labels = get_pushback_labels(qualitative_labels,
-                                            'christian_toxic_pull_request_comments',
-                                            'qualitative_analysis_labels',
-                                            str(comment['_id']))
-                qualitative_label_buttons = get_qualitative_label_buttons(qualitative_label_buttons,
-                                            'christian_toxic_pull_request_comments',
-                                            str(comment['_id']))
-
-            if tcomment:
-                if 'toxicity' in tcomment:
-                    comment['toxicity'] = tcomment['toxicity']
-
-            comments[str(tissue['_id'])] += [comment]
-
-        
-        comments[str(issue['_id'])] = sorted(comments[str(issue['_id'])], key=lambda e: e['created_at'])
-
-    cursor.rewind()
-    prs_for_render = cursor.skip(offset).limit(per_page)
-
-    if with_total:
-        total = cursor.count()
-    else:
-        total = 12345678
-
-    pagination = get_pagination(page, per_page, 'per_page', offset, total)
-
-    return render_template('pushback.html',
-                            tprs=prs_for_render,
-                            prs=prs,
-                            comments=comments,
-                            pushback_labels=pushback_labels,
-                            pushback_label_buttons=pushback_label_buttons,
-                            qualitative_labels=qualitative_labels,
-                            qualitative_label_buttons=qualitative_label_buttons,
-                            pr_titles=issue_titles,
-                            pagination=pagination,
-                            is_toxic=is_toxic,
-                            version=app.config['VERSION'],
-                            form=form)
-
-@app.route('/list/sampled_sophie_prs', methods=['GET', 'POST'])
-@login_required
-def list_sampled_sophie_prs():
-    with_total = False
-    order = []
-    disable_coding = True
-    q = query_tolabel_sq(current_user.username)
-    
-    page, per_page, offset = get_page_details()
-    
-    cursor = pmongo.db['christian_toxic_pull_requests'].find(q, sort=order)
-
-    issues_for_render = cursor.skip(offset).limit(per_page)
-
-    form = LabelForm()
-    if form.validate_on_submit():
-        element_id = form.element_id.data
-        element_type = form.element_type.data
-        if element_type == 'pull_request':
-            table = 'christian_toxic_pull_requests'
-        elif element_type == 'pull_request_comment':
-            table = 'christian_toxic_issue_comments'
-        else:
-            table = 'christian_toxic_pull_request_comments'
-        label = '-'.join(form.element_label.data.lower().split())
-        submit_pressed = form.submit.data  # this will be True if Submit was pressed, False otherwise
-        add_code(table, element_id, label)
-        # do stuff
-        return redirect(request.referrer)
-
-
-    issues = {}
-    toxicity_labels = {}
-    toxicity_label_buttons = {}
-    qualitative_labels = {}
-    qualitative_label_buttons = {}
-    issue_titles = {}
-    comments = {}
-
-    for tissue in issues_for_render:
-        issue = pmongo.db['pull_requests']\
-                .find_one({'_id':ObjectId(tissue['_id'])})
-        issues[str(tissue['_id'])] = issue
-
-        toxicity_labels = get_toxicity_labels(toxicity_labels,
-                                            'christian_toxic_pull_requests',
-                                            'manual_labels',
-                                            str(tissue['_id']))
-        toxicity_label_buttons = add_toxicity_label_buttons(toxicity_label_buttons,
-                                            'christian_toxic_pull_requests',
-                                            str(tissue['_id']))
-
-        if not disable_coding:
-            qualitative_labels = get_toxicity_labels(qualitative_labels,
-                                            'christian_toxic_pull_requests',
-                                            'qualitative_analysis_labels',
-                                            str(tissue['_id']))
-            qualitative_label_buttons = get_qualitative_label_buttons(qualitative_label_buttons,
-                                            'christian_toxic_pull_requests',
-                                            str(tissue['_id']))
-
-        issue_titles[str(tissue['_id'])] = '{0}/{1}#{2}'.format(issue['owner'],
-                                                    issue['repo'],
-                                                    issue['number'])
-
-        comments_cursor = pmongo.db['issue_comments']\
-            .find({'owner':issue['owner'],
-                    'repo':issue['repo'],
-                    'issue_id':issue['number']})
-
-        comments.setdefault(str(issue['_id']), [])
-        for comment in comments_cursor:
-            tcomment = pmongo.db['christian_toxic_issue_comments']\
-                .find_one({'_id':ObjectId(comment['_id'])})
-            toxicity_labels = get_toxicity_labels(toxicity_labels,
-                                                'christian_toxic_issue_comments',
-                                                'manual_labels',
-                                                str(comment['_id']))
-            toxicity_label_buttons = add_toxicity_label_buttons(toxicity_label_buttons,
-                                                'christian_toxic_issue_comments',
-                                                str(comment['_id']))
-
-            if not disable_coding:
-                qualitative_labels = get_toxicity_labels(qualitative_labels,
-                                            'christian_toxic_issue_comments',
-                                            'qualitative_analysis_labels',
-                                            str(comment['_id']))
-                qualitative_label_buttons = get_qualitative_label_buttons(qualitative_label_buttons,
-                                            'christian_toxic_issue_comments',
-                                            str(comment['_id']))
-
-            if tcomment:
-                if 'toxicity' in tcomment:
-                    comment['toxicity'] = tcomment['toxicity']
-
-            comments[str(tissue['_id'])] += [comment]
-
-
-        
-        review_comments_cursor = pmongo.db['pull_request_comments']\
-            .find({'owner':issue['owner'],
-                    'repo':issue['repo'],
-                    'pullreq_id':issue['number']})
-
-        comments.setdefault(str(issue['_id']), [])
-        for comment in review_comments_cursor:
-            tcomment = pmongo.db['christian_toxic_pull_request_comments']\
-                .find_one({'_id':ObjectId(comment['_id'])})
-            toxicity_labels = get_toxicity_labels(toxicity_labels,
-                                                'christian_toxic_pull_request_comments',
-                                                'manual_labels',
-                                                str(comment['_id']))
-            toxicity_label_buttons = add_toxicity_label_buttons(toxicity_label_buttons,
-                                                'christian_toxic_pull_request_comments',
-                                                str(comment['_id']))
-
-            if not disable_coding:
-                qualitative_labels = get_toxicity_labels(qualitative_labels,
-                                            'christian_toxic_pull_request_comments',
-                                            'qualitative_analysis_labels',
-                                            str(comment['_id']))
-                qualitative_label_buttons = get_qualitative_label_buttons(qualitative_label_buttons,
-                                            'christian_toxic_pull_request_comments',
-                                            str(comment['_id']))
-
-            if tcomment:
-                if 'toxicity' in tcomment:
-                    comment['toxicity'] = tcomment['toxicity']
-
-            comments[str(tissue['_id'])] += [comment]
-
-        
-        comments[str(issue['_id'])] = sorted(comments[str(issue['_id'])], key=lambda e: e['created_at'])
-
-    cursor.rewind()
-    issues_for_render = cursor.skip(offset).limit(per_page)
-
-    if with_total:
-        total = cursor.count()
-    else:
-        total = 12345678 
-
-    pagination = get_pagination(page, per_page, 'per_page', offset, total)
-
-    return render_template('toxic_issues2.html',
-                            tissues=issues_for_render,
-                            issues=issues,
-                            comments=comments,
-                            toxic_labels=toxicity_labels,
-                            toxic_label_buttons=toxicity_label_buttons,
-                            qualitative_labels=qualitative_labels,
-                            qualitative_label_buttons=qualitative_label_buttons,
-                            issue_titles=issue_titles,
-                            pagination=pagination,
-                            is_toxic=is_toxic,
-                            version=app.config['VERSION'],
-                            form=form)
-
-@app.route('/list/classifier_prs_w_review_comments', methods=['GET', 'POST'])
-@login_required
-def list_toxic_prs():
-    with_total = False
-    order = []
-    disable_coding = False
-    
-    q = {"$and":[
-            {"has_toxic_review_comment":True},
-            {"num_comments":{"$gt":0}},
-            {"is_pr":True}]
-    }
-
-    page, per_page, offset = get_page_details()
-    
-    cursor = pmongo.db['christian_toxic_issues'].find(q, sort=order)
-
-    issues_for_render = cursor.skip(offset).limit(per_page)
-
-    form = LabelForm()
-    if form.validate_on_submit():
-        element_id = form.element_id.data
-        element_type = form.element_type.data
-        if element_type == 'issue':
-            table = 'christian_toxic_issues'
-        elif element_type == 'issue_comment':
-            table = 'christian_toxic_issue_comments'
-        else:
-            table = 'christian_toxic_pull_request_comments'
-        label = '-'.join(form.element_label.data.lower().split())
-        submit_pressed = form.submit.data  # this will be True if Submit was pressed, False otherwise
-        add_code(table, element_id, label)
-        # do stuff
-        return redirect(request.referrer)
-
-
-    issues = {}
-    toxicity_labels = {}
-    toxicity_label_buttons = {}
-    qualitative_labels = {}
-    qualitative_label_buttons = {}
-    issue_titles = {}
-    comments = {}
-    review_comments = {}
-
-    for tissue in issues_for_render:
-        issue = pmongo.db['issues']\
-                .find_one({'_id':ObjectId(tissue['_id'])})
-        issues[str(tissue['_id'])] = issue
-
-        toxicity_labels = get_toxicity_labels(toxicity_labels,
-                                            'christian_toxic_issues',
-                                            'manual_labels',
-                                            str(tissue['_id']))
-        toxicity_label_buttons = add_toxicity_label_buttons(toxicity_label_buttons,
-                                            'christian_toxic_issues',
-                                            str(tissue['_id']))
-
-        if not disable_coding:
-            qualitative_labels = get_toxicity_labels(qualitative_labels,
-                                            'christian_toxic_issues',
-                                            'qualitative_analysis_labels',
-                                            str(tissue['_id']))
-            qualitative_label_buttons = get_qualitative_label_buttons(qualitative_label_buttons,
-                                            'christian_toxic_issues',
-                                            str(tissue['_id']))
-
-        issue_titles[str(tissue['_id'])] = '{0}/{1}#{2}'.format(issue['owner'],
-                                                    issue['repo'],
-                                                    issue['number'])
-
-        comments_cursor = pmongo.db['issue_comments']\
-            .find({'owner':issue['owner'],
-                    'repo':issue['repo'],
-                    'issue_id':issue['number']})
-
-        comments.setdefault(str(issue['_id']), [])
-        for comment in comments_cursor:
-            tcomment = pmongo.db['christian_toxic_issue_comments']\
-                .find_one({'_id':ObjectId(comment['_id'])})
-            toxicity_labels = get_toxicity_labels(toxicity_labels,
-                                                'christian_toxic_issue_comments',
-                                                'manual_labels',
-                                                str(comment['_id']))
-            toxicity_label_buttons = add_toxicity_label_buttons(toxicity_label_buttons,
-                                                'christian_toxic_issue_comments',
-                                                str(comment['_id']))
-
-            if not disable_coding:
-                qualitative_labels = get_toxicity_labels(qualitative_labels,
-                                            'christian_toxic_issue_comments',
-                                            'qualitative_analysis_labels',
-                                            str(comment['_id']))
-                qualitative_label_buttons = get_qualitative_label_buttons(qualitative_label_buttons,
-                                            'christian_toxic_issue_comments',
-                                            str(comment['_id']))
-
-            if tcomment:
-                if 'toxicity' in tcomment:
-                    comment['toxicity'] = tcomment['toxicity']
-
-            comments[str(tissue['_id'])] += [comment]
-
-
-        
-        review_comments_cursor = pmongo.db['pull_request_comments']\
-            .find({'owner':issue['owner'],
-                    'repo':issue['repo'],
-                    'pullreq_id':issue['number']})
-
-        comments.setdefault(str(issue['_id']), [])
-        for comment in review_comments_cursor:
-            tcomment = pmongo.db['christian_toxic_pull_request_comments']\
-                .find_one({'_id':ObjectId(comment['_id'])})
-            toxicity_labels = get_toxicity_labels(toxicity_labels,
-                                                'christian_toxic_pull_request_comments',
-                                                'manual_labels',
-                                                str(comment['_id']))
-            toxicity_label_buttons = add_toxicity_label_buttons(toxicity_label_buttons,
-                                                'christian_toxic_pull_request_comments',
-                                                str(comment['_id']))
-
-            if not disable_coding:
-                qualitative_labels = get_toxicity_labels(qualitative_labels,
-                                            'christian_toxic_pull_request_comments',
-                                            'qualitative_analysis_labels',
-                                            str(comment['_id']))
-                qualitative_label_buttons = get_qualitative_label_buttons(qualitative_label_buttons,
-                                            'christian_toxic_pull_request_comments',
-                                            str(comment['_id']))
-
-            if tcomment:
-                if 'toxicity' in tcomment:
-                    comment['toxicity'] = tcomment['toxicity']
-
-            comments[str(tissue['_id'])] += [comment]
-
-        
-        comments[str(issue['_id'])] = sorted(comments[str(issue['_id'])], key=lambda e: e['created_at'])
-
-    cursor.rewind()
-    issues_for_render = cursor.skip(offset).limit(per_page)
-
-    if with_total:
-        total = cursor.count()
-    else:
-        total = 12345678
-
-    pagination = get_pagination(page, per_page, 'per_page', offset, total)
-
-    return render_template('toxic_issues2.html',
-                            tissues=issues_for_render,
-                            issues=issues,
-                            comments=comments,
-                            toxic_labels=toxicity_labels,
-                            toxic_label_buttons=toxicity_label_buttons,
-                            qualitative_labels=qualitative_labels,
-                            qualitative_label_buttons=qualitative_label_buttons,
-                            issue_titles=issue_titles,
-                            pagination=pagination,
-                            is_toxic=is_toxic,
-                            version=app.config['VERSION'],
-                            form=form)
-
 
 
 
@@ -821,6 +351,18 @@ def list_issues(what):
     with_total = False
     order = []
     disable_coding = False
+    is_pr = False
+
+    top_collection = 'issues'
+    toxic_top_collection = 'christian_toxic_issues'
+    comments_collection = 'issue_comments'
+    toxic_comments_collection = 'christian_toxic_issue_comments'
+    review_comments_collection = 'pull_request_comments'
+    toxic_review_comments_collection = 'christian_toxic_pull_request_comments'
+    prediction_labels = 'TOXICITY_LABELS'
+    doc_prefix = 'toxicity'
+    endpoint_prefix = 'toxiclabel'
+
     if what == 'classifier_issues_w_comments':
         q = query_predicted_issues_w_comments
     elif what == 'classifier_issues_all':
@@ -840,17 +382,32 @@ def list_issues(what):
         disable_coding = True
     elif what == 'classifier_prs_all':
         q = query_predicted_prs_all
+        is_pr = True
     elif what == 'classifier_prs_w_comments':
         q = query_predicted_prs_w_comments
+        is_pr = True
     elif what == 'classifier_prs_w_review_comments':
         q = query_predicted_prs_w_review_comments
+        is_pr = True
+    elif what == 'sophie_sampled_prs':
+        q = query_tolabel_sq(current_user.username)
+        is_pr = True
+        toxic_top_collection = 'christian_toxic_pull_requests'
+        top_collection = 'pull_requests'
+    elif what == 'sophie_survey_prs':
+        q = query_survey
+        is_pr = True
+        toxic_top_collection = 'christian_toxic_pull_requests'
+        top_collection = 'pull_requests'
+        prediction_labels = 'PUSHBACK_LABELS'
+        doc_prefix = 'pushback'
+        endpoint_prefix = 'pushbacklabel'
 
 
 
     page, per_page, offset = get_page_details()
     
-    cursor = pmongo.db['christian_toxic_issues'].find(q, sort=order)
-
+    cursor = pmongo.db[toxic_top_collection].find(q, sort=order)
 
     issues_for_render = cursor.skip(offset).limit(per_page)
 
@@ -860,8 +417,14 @@ def list_issues(what):
         element_type = form.element_type.data
         if element_type == 'issue':
             table = 'christian_toxic_issues'
-        else:
+        elif element_type == 'issue_comment':
             table = 'christian_toxic_issue_comments'
+        elif element_type == 'pull_request':
+            table = 'christian_toxic_pull_requests'
+        elif element_type == 'pull_request_comment':
+            table = 'christian_toxic_issue_comments'
+        else:
+            table = 'christian_toxic_pull_request_comments'
         label = '-'.join(form.element_label.data.lower().split())
         submit_pressed = form.submit.data  # this will be True if Submit was pressed, False otherwise
         add_code(table, element_id, label)
@@ -878,62 +441,120 @@ def list_issues(what):
     comments = {}
 
     for tissue in issues_for_render:
-        issue = pmongo.db['issues']\
+        issue = pmongo.db[top_collection]\
                 .find_one({'_id':ObjectId(tissue['_id'])})
         issues[str(tissue['_id'])] = issue
 
-        toxicity_labels = get_toxicity_labels(toxicity_labels,
-                                            'christian_toxic_issues',
-                                            'manual_labels',
-                                            str(tissue['_id']))
-        toxicity_label_buttons = add_toxicity_label_buttons(toxicity_label_buttons,
-                                            'christian_toxic_issues',
-                                            str(tissue['_id']))
+        toxicity_labels = get_labels(toxicity_labels,
+                                        toxic_top_collection, 
+                                        doc_prefix, 
+                                        'manual_labels',
+                                        str(tissue['_id']))
+        toxicity_label_buttons = get_label_buttons(toxicity_label_buttons,
+                                        endpoint_prefix,
+                                        app.config[prediction_labels],
+                                        toxic_top_collection,
+                                        str(tissue['_id']))
 
         if not disable_coding:
-            qualitative_labels = get_toxicity_labels(qualitative_labels,
-                                            'christian_toxic_issues',
+            qualitative_labels = get_labels(qualitative_labels,
+                                            toxic_top_collection,
+                                            doc_prefix,
                                             'qualitative_analysis_labels',
                                             str(tissue['_id']))
-            qualitative_label_buttons = get_qualitative_label_buttons(qualitative_label_buttons,
-                                            'christian_toxic_issues',
+            qualitative_label_buttons = get_label_buttons_from_db(qualitative_label_buttons,
+                                            'qualitativelabel',
+                                            None, # not used currently
+                                            toxic_top_collection,
                                             str(tissue['_id']))
 
         issue_titles[str(tissue['_id'])] = '{0}/{1}#{2}'.format(issue['owner'],
                                                     issue['repo'],
                                                     issue['number'])
 
-        comments_cursor = pmongo.db['issue_comments']\
+        comments_cursor = pmongo.db[comments_collection]\
             .find({'owner':issue['owner'],
                     'repo':issue['repo'],
                     'issue_id':issue['number']})
 
         comments.setdefault(str(issue['_id']), [])
         for comment in comments_cursor:
-            tcomment = pmongo.db['christian_toxic_issue_comments']\
+            tcomment = pmongo.db[toxic_comments_collection]\
                 .find_one({'_id':ObjectId(comment['_id'])})
-            toxicity_labels = get_toxicity_labels(toxicity_labels,
-                                                'christian_toxic_issue_comments',
-                                                'manual_labels',
-                                                str(comment['_id']))
-            toxicity_label_buttons = add_toxicity_label_buttons(toxicity_label_buttons,
-                                                'christian_toxic_issue_comments',
-                                                str(comment['_id']))
+            toxicity_labels = get_labels(toxicity_labels,
+                                            toxic_comments_collection,
+                                            doc_prefix,
+                                            'manual_labels',
+                                            str(comment['_id']))
+            toxicity_label_buttons = get_label_buttons(toxicity_label_buttons,
+                                            endpoint_prefix,
+                                            app.config[prediction_labels],
+                                            toxic_comments_collection,
+                                            str(comment['_id']))
 
             if not disable_coding:
-                qualitative_labels = get_toxicity_labels(qualitative_labels,
-                                            'christian_toxic_issue_comments',
+                qualitative_labels = get_labels(qualitative_labels,
+                                            toxic_comments_collection,
+                                            doc_prefix,
                                             'qualitative_analysis_labels',
                                             str(comment['_id']))
-                qualitative_label_buttons = get_qualitative_label_buttons(qualitative_label_buttons,
-                                            'christian_toxic_issue_comments',
+                qualitative_label_buttons = get_label_buttons_from_db(qualitative_label_buttons,
+                                            'qualitativelabel',
+                                            None, # not used currently
+                                            toxic_comments_collection,
                                             str(comment['_id']))
 
             if tcomment:
-                if 'toxicity' in tcomment:
-                    comment['toxicity'] = tcomment['toxicity']
+                if doc_prefix in tcomment:
+                    comment[doc_prefix] = tcomment[doc_prefix]
 
             comments[str(tissue['_id'])] += [comment]
+
+
+        # PR review comments
+        if is_pr:
+            review_comments_cursor = pmongo.db[review_comments_collection]\
+                .find({'owner':issue['owner'],
+                        'repo':issue['repo'],
+                        'pullreq_id':issue['number']})
+
+            comments.setdefault(str(issue['_id']), [])
+            for comment in review_comments_cursor:
+                tcomment = pmongo.db[toxic_review_comments_collection]\
+                    .find_one({'_id':ObjectId(comment['_id'])})
+                toxicity_labels = get_labels(toxicity_labels,
+                                            toxic_review_comments_collection,
+                                            doc_prefix,
+                                            'manual_labels',
+                                            str(comment['_id']))
+                toxicity_label_buttons = get_label_buttons(toxicity_label_buttons,
+                                            endpoint_prefix,
+                                            app.config[prediction_labels],
+                                            toxic_review_comments_collection,
+                                            str(comment['_id']))
+
+                if not disable_coding:
+                    qualitative_labels = get_labels(qualitative_labels,
+                                                toxic_review_comments_collection,
+                                                doc_prefix,
+                                                'qualitative_analysis_labels',
+                                                str(comment['_id']))
+                    qualitative_label_buttons = get_label_buttons_from_db(qualitative_label_buttons,
+                                                'qualitativelabel',
+                                                None, # not used currently
+                                                toxic_review_comments_collection,
+                                                str(comment['_id']))
+
+                if tcomment:
+                    if doc_prefix in tcomment:
+                        comment[doc_prefix] = tcomment[doc_prefix]
+
+                comments[str(tissue['_id'])] += [comment]
+
+            
+            comments[str(issue['_id'])] = sorted(comments[str(issue['_id'])], key=lambda e: e['created_at'])
+
+
 
     cursor.rewind()
     issues_for_render = cursor.skip(offset).limit(per_page)
@@ -958,5 +579,4 @@ def list_issues(what):
                             is_toxic=is_toxic,
                             version=app.config['VERSION'],
                             form=form)
-
 
