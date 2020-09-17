@@ -390,7 +390,7 @@ def list_issues(what):
         q = query_predicted_prs_w_review_comments
         is_pr = True
     elif what == 'sophie_sampled_prs':
-        q = query_tolabel_sq(current_user.username)
+        q = query_tolabel(current_user.username)
         is_pr = True
         toxic_top_collection = 'christian_toxic_pull_requests'
         top_collection = 'pull_requests'
