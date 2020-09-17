@@ -362,6 +362,8 @@ def list_issues(what):
     prediction_labels = 'TOXICITY_LABELS'
     doc_prefix = 'toxicity'
     endpoint_prefix = 'toxiclabel'
+    definition = ''
+    task_type = 'toxicity'
 
     if what == 'classifier_issues_w_comments':
         q = query_predicted_issues_w_comments
@@ -401,6 +403,8 @@ def list_issues(what):
         top_collection = 'pull_requests'
         prediction_labels = 'PUSHBACK_LABELS'
         doc_prefix = 'pushback'
+        definition = 'Definition: the perception of unnecessary interpersonal conflict in code review while a reviewer is blocking a change request'
+        task_type = 'pushback'
         endpoint_prefix = 'pushbacklabel'
 
 
@@ -567,6 +571,8 @@ def list_issues(what):
     pagination = get_pagination(page, per_page, 'per_page', offset, total)
 
     return render_template('toxic_issues2.html',
+                            task_type = task_type,
+                            definition=definition,
                             tissues=issues_for_render,
                             issues=issues,
                             comments=comments,

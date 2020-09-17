@@ -18,11 +18,11 @@
             <a href="https://github.com/{{ issue.owner }}/{{ issue.repo }}/issues/{{ issue.number }}">{{ issue.owner }}/{{ issue.repo }} #{{ issue.number }}</a>
         </h3>
           
-        {{ render_post(issueid, "issue", issue, tissue, toxic_labels, toxic_label_buttons, qualitative_labels, qualitative_label_buttons, version, form) }}
+        {{ render_post(task_type, definition, issueid, "issue", issue, tissue, toxic_labels, toxic_label_buttons, qualitative_labels, qualitative_label_buttons, version, form) }}
         
         {% for comment in comments[issueid] %}
             {% set commentid = comment['_id']|string %}
-            {{ render_post(commentid, "comment", comment, comment, toxic_labels, toxic_label_buttons, qualitative_labels, qualitative_label_buttons, version, form) }}
+            {{ render_post(task_type, definition, commentid, "comment", comment, comment, toxic_labels, toxic_label_buttons, qualitative_labels, qualitative_label_buttons, version, form) }}
         {% endfor %}
 
     {% endfor %}
