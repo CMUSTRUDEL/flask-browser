@@ -2,6 +2,7 @@ from flask import render_template, flash, redirect, url_for, abort
 from flask import request, send_from_directory
 from werkzeug.urls import url_parse
 from app import app
+from app import db
 from app.forms import LoginForm, RegistrationForm
 from app.models import User
 from app.forms import ResetPasswordRequestForm
