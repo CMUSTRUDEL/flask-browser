@@ -28,7 +28,8 @@ from app.queries import query_predicted_issues_all, \
                     query_predicted_prs_w_review_comments, \
                     query_stratified, \
                     query_tolabel_sq, \
-                    query_survey
+                    query_survey, \
+                    query_closed
 
 
 
@@ -406,6 +407,7 @@ def list_issues(what):
         definition = 'Definition: the perception of unnecessary interpersonal conflict in code review while a reviewer is blocking a change request'
         task_type = 'pushback'
         endpoint_prefix = 'pushbacklabel'
+    elif what == 'sophie_closed':
 
 
 

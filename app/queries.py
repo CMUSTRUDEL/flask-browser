@@ -23,6 +23,14 @@ query_survey = \
         ]
     }
 
+query_closed = \
+    {"$and":[
+        {"state" : "closed" },
+        {"toxicity."+app.config['VERSION']+".orig.persp_raw.detectedLanguages":["en"]},
+        {"toxicity."+app.config['VERSION']+".en":{"$gt": .001}}
+        ]
+    }
+
 query_classifier_toxic = \
     {"$and":[
         {"toxicity."+app.config['VERSION']+".score":1},
