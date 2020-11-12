@@ -23,11 +23,13 @@ query_survey = \
         ]
     }
 
+
 query_closed = \
     {"$and":[
         {"state" : "closed" },
-        {"toxicity."+app.config['VERSION']+".orig.persp_raw.detectedLanguages":["en"]},
-        {"toxicity."+app.config['VERSION']+".en":{"$gt": .001}}
+        {"merged" : False },
+        #{"toxicity."+app.config['VERSION']+".orig.persp_raw.detectedLanguages":["en"]},
+        #{"toxicity."+app.config['VERSION']+".en":{"$gt": .001}}
         ]
     }
 
@@ -137,3 +139,13 @@ def query_tolabel(username):
     {"toxicity.manual_labeled_comments.user":{"$not": {"$regex": "^"+username+"$"}}},
     {"toxicity.todo":1}
   ]}
+
+query_closed = \
+    {"$and":[
+        {"state" : "closed" },
+        {"merged" : False },
+        #{"toxicity."+app.config['VERSION']+".orig.persp_raw.detectedLanguages":["en"]},
+        #{"toxicity."+app.config['VERSION']+".en":{"$gt": .001}}
+        ]
+    }
+

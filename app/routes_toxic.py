@@ -408,7 +408,15 @@ def list_issues(what):
         task_type = 'pushback'
         endpoint_prefix = 'pushbacklabel'
     elif what == 'sophie_closed':
-
+        q = query_closed
+        is_pr = True
+        toxic_top_collection = 'pull_requests'
+        top_collection = 'pull_requests'
+        prediction_labels = 'PUSHBACK_LABELS'
+        doc_prefix = 'pushback'
+        definition = 'Definition: the perception of unnecessary interpersonal conflict in code review while a reviewer is blocking a change request'
+        task_type = 'pushback'
+        endpoint_prefix = 'pushbacklabel'
 
 
     page, per_page, offset = get_page_details()
