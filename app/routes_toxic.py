@@ -352,6 +352,7 @@ def list_issues(what):
     order = []
     disable_coding = False
     is_pr = False
+    post_type = "issue"
 
     top_collection = 'issues'
     toxic_top_collection = 'christian_toxic_issues'
@@ -416,6 +417,8 @@ def list_issues(what):
         definition = 'Definition: the perception of unnecessary interpersonal conflict in code review while a reviewer is blocking a change request'
         task_type = 'pushback'
         endpoint_prefix = 'pushbacklabel'
+    if is_pr:
+        post_type = "pr"
 
 
     page, per_page, offset = get_page_details()
@@ -584,6 +587,7 @@ def list_issues(what):
                             definition=definition,
                             tissues=issues_for_render,
                             issues=issues,
+                            post_type=post_type,
                             comments=comments,
                             toxic_labels=toxicity_labels,
                             toxic_label_buttons=toxicity_label_buttons,
