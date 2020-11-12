@@ -27,7 +27,6 @@ from app.queries import query_predicted_issues_all, \
                     query_predicted_prs_w_comments, \
                     query_predicted_prs_w_review_comments, \
                     query_stratified, \
-                    query_tolabel_sq, \
                     query_survey, \
                     query_closed
 
@@ -398,7 +397,7 @@ def list_issues(what):
         toxic_top_collection = 'christian_toxic_pull_requests'
         top_collection = 'pull_requests'
     elif what == 'sophie_survey_prs':
-        q = query_survey
+        q = query_survey(current_user.username)
         is_pr = True
         toxic_top_collection = 'christian_toxic_pull_requests'
         top_collection = 'pull_requests'
@@ -408,7 +407,7 @@ def list_issues(what):
         task_type = 'pushback'
         endpoint_prefix = 'pushbacklabel'
     elif what == 'sophie_closed':
-        q = query_closed
+        q = query_closed(current_user.username)
         is_pr = True
         toxic_top_collection = 'pull_requests'
         top_collection = 'pull_requests'

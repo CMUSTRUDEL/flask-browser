@@ -4,35 +4,6 @@ from app.stratified import high_perspective
 from app.survey import survey
 from bson.objectid import ObjectId
 
-def query_tolabel_sq(username):
-  return {"toxicity.todo":1}
-
-query_stratified = \
-    {"$and":[
-        {"_id" : { "$in" : [ObjectId(_id) for _id in high_perspective] } },
-        {"toxicity."+app.config['VERSION']+".orig.persp_raw.detectedLanguages":["en"]},
-        {"toxicity."+app.config['VERSION']+".en":{"$gt": .001}}
-        ]
-    }
-
-query_survey = \
-    {"$and":[
-        {"_id" : { "$in" : [ObjectId(_id) for _id in survey] } },
-        {"toxicity."+app.config['VERSION']+".orig.persp_raw.detectedLanguages":["en"]},
-        {"toxicity."+app.config['VERSION']+".en":{"$gt": .001}}
-        ]
-    }
-
-
-query_closed = \
-    {"$and":[
-        {"state" : "closed" },
-        {"merged" : False },
-        #{"toxicity."+app.config['VERSION']+".orig.persp_raw.detectedLanguages":["en"]},
-        #{"toxicity."+app.config['VERSION']+".en":{"$gt": .001}}
-        ]
-    }
-
 query_classifier_toxic = \
     {"$and":[
         {"toxicity."+app.config['VERSION']+".score":1},
@@ -134,18 +105,35 @@ def query_individual_annotations(username):
 
 
 def query_tolabel(username):
-  return {"$and": [
-    {"toxicity.manual_labels.user":{"$not": {"$regex": "^"+username+"$"}}},
-    {"toxicity.manual_labeled_comments.user":{"$not": {"$regex": "^"+username+"$"}}},
-    {"toxicity.todo":1}
-  ]}
+    return {"$and":[
+        {"toxicity.manual_labels.user":{"$not": {"$regex": "^"+username+"$"}}},
+        {"toxicity.manual_labeled_comments.user":{"$not": {"$regex": "^"+username+"$"}}},
+        {"toxicity.todo":1}
+        ]
+    }
 
-query_closed = \
-    {"$and":[
+def query_closed(username):
+    return {"$and":[
         {"state" : "closed" },
         {"merged" : False },
-        #{"toxicity."+app.config['VERSION']+".orig.persp_raw.detectedLanguages":["en"]},
-        #{"toxicity."+app.config['VERSION']+".en":{"$gt": .001}}
+        {"comments": {"$gte": 20} },
+        {"changed_files": {"$lte": 5} },
+        ]
+    }
+
+def query_survey(username):
+    return {"$and":[
+        {"_id" : { "$in" : [ObjectId(_id) for _id in survey] } },
+        {"toxicity."+app.config['VERSION']+".orig.persp_raw.detectedLanguages":["en"]},
+        {"toxicity."+app.config['VERSION']+".en":{"$gt": .001}}
+        ]
+    }
+
+query_stratified = \
+    {"$and":[
+        {"_id" : { "$in" : [ObjectId(_id) for _id in high_perspective] } },
+        {"toxicity."+app.config['VERSION']+".orig.persp_raw.detectedLanguages":["en"]},
+        {"toxicity."+app.config['VERSION']+".en":{"$gt": .001}}
         ]
     }
 
