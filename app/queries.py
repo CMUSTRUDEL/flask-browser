@@ -1,4 +1,5 @@
 from app import app
+from datetime import datetime
 from flask_login import current_user
 from app.stratified import high_perspective
 from app.survey import survey
@@ -116,8 +117,13 @@ def query_closed(username):
     return {"$and":[
         {"state" : "closed" },
         {"merged" : False },
-        {"comments": {"$gte": 20} },
+        {"$or": 
+            [ {"comments": {"$gte": 10} },
+              {"review_comments": {"$gte": 10} },
+            ]
+        },
         {"changed_files": {"$lte": 5} },
+        {"created_at": {"$gte": "2020-01-01"} }
         ]
     }
 
@@ -125,7 +131,9 @@ def query_survey(username):
     return {"$and":[
         {"_id" : { "$in" : [ObjectId(_id) for _id in survey] } },
         {"toxicity."+app.config['VERSION']+".orig.persp_raw.detectedLanguages":["en"]},
-        {"toxicity."+app.config['VERSION']+".en":{"$gt": .001}}
+        {"toxicity."+app.config['VERSION']+".en":{"$gt": .001}},
+        {"toxicity.manual_labels.user":{"$not": {"$regex": "^"+username+"$"}}},
+        {"toxicity.manual_labeled_comments.user":{"$not": {"$regex": "^"+username+"$"}}},
         ]
     }
 
