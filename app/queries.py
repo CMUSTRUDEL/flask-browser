@@ -93,7 +93,7 @@ query_confirmed_toxic = \
     }
 
 query_unlabeled = \
-        {'$and': [{'is_labeled': {'$not':{'$eq': True}}}, {'has_labeled_comment': {'$not': {'$eq': True}}}]}
+        {'$and': [{'is_labeled': {'$not':{'$eq': True}}}, {'has_labeled_comment': {'$not': {'$eq': True}}},{"updated_at":{"$regex": "^2020-0[345]"}}]}
 query_labeled_toxic = \
         {"$or" : [{"is_labeled_toxic":True}, {"has_labeled_toxic_comment": True}]}
 

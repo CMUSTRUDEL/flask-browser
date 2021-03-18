@@ -111,7 +111,6 @@ def get_label_buttons_from_db(label_buttons, endpoint, labels, collection, eid):
     return label_buttons
 
 def count_labeled_issues(query):
-    print(qlabeled_toxic(query))
     return pmongo.db["christian_toxic_issues"].count(qlabeled_toxic(query))
 
 
@@ -435,7 +434,7 @@ def list_issues(what):
         label_counter = count_labeled_issues(query_deleted)
         with_total = True
     elif what == 'label_toxiccomment':
-        q = qunlabled(query_toxiccomment)
+        q = qunlabeled(query_toxiccomment)
         label_counter = count_labeled_issues(query_toxiccomment)
         with_total = True
     elif what == 'label_coc':
@@ -443,6 +442,7 @@ def list_issues(what):
         label_counter = count_labeled_issues(query_coc)
         with_total = True
 
+    print(q)
 
     page, per_page, offset = get_page_details()
     
