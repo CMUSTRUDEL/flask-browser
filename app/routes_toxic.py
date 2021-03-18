@@ -28,7 +28,11 @@ from app.queries import query_predicted_issues_all, \
                     query_predicted_prs_w_review_comments, \
                     query_stratified, \
                     query_survey, \
-                    query_closed
+                    query_closed,\
+                    query_locked,\
+                    query_deleted,\
+                    query_toxiccomment,\
+                    query_coc, qunlabeled, qlabeled_toxic
 
 
 
@@ -106,7 +110,9 @@ def get_label_buttons_from_db(label_buttons, endpoint, labels, collection, eid):
         label_buttons[eid].append(d)
     return label_buttons
 
-
+def count_labeled_issues(query):
+    print(qlabeled_toxic(query))
+    return pmongo.db["christian_toxic_issues"].count(qlabeled_toxic(query))
 
 
 @app.route('/pushbacklabel/<table>/<eid>/<label>')
@@ -367,6 +373,7 @@ def list_issues(what):
     endpoint_prefix = 'toxiclabel'
     definition = ''
     task_type = 'toxicity'
+    label_counter = -1
 
     if what == 'classifier_issues_w_comments':
         q = query_predicted_issues_w_comments
@@ -419,6 +426,22 @@ def list_issues(what):
         definition = 'Definition: the perception of unnecessary interpersonal conflict in code review while a reviewer is blocking a change request'
         task_type = 'pushback'
         endpoint_prefix = 'pushbacklabel'
+    elif what == 'label_locked':
+        q = qunlabeled(query_locked)
+        label_counter = count_labeled_issues(query_locked)
+        with_total = True
+    elif what == 'label_deleted':
+        q = qunlabeled(query_deleted)
+        label_counter = count_labeled_issues(query_deleted)
+        with_total = True
+    elif what == 'label_toxiccomment':
+        q = qunlabled(query_toxiccomment)
+        label_counter = count_labeled_issues(query_toxiccomment)
+        with_total = True
+    elif what == 'label_coc':
+        q = qunlabeled(query_coc)
+        label_counter = count_labeled_issues(query_coc)
+        with_total = True
 
 
     page, per_page, offset = get_page_details()
@@ -570,7 +593,9 @@ def list_issues(what):
             
             comments[str(issue['_id'])] = sorted(comments[str(issue['_id'])], key=lambda e: e['created_at'])
 
-
+    extra_info = ""
+    if label_counter > 0:
+        extra_info = "Toxic issues already labeled: "+str(label_counter)
 
     cursor.rewind()
     issues_for_render = cursor.skip(offset).limit(per_page)
@@ -596,5 +621,6 @@ def list_issues(what):
                             pagination=pagination,
                             is_toxic=is_toxic,
                             version=app.config['VERSION'],
+                            extra_info=extra_info,
                             form=form)
 

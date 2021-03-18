@@ -92,6 +92,10 @@ query_confirmed_toxic = \
         ]
     }
 
+query_unlabeled = \
+        {'$and': [{'is_labeled': {'$not':{'$eq': True}}}, {'has_labeled_comment': {'$not': {'$eq': True}}}]}
+query_labeled_toxic = \
+        {"$or" : [{"is_labeled_toxic":True}, {"has_labeled_toxic_comment": True}]}
 
 def query_individual_annotations(username):
     return {"$and":[
@@ -144,4 +148,17 @@ query_stratified = \
         {"toxicity."+app.config['VERSION']+".en":{"$gt": .001}}
         ]
     }
+
+
+def qand(a, b):
+    return {"$and": [a,b]}
+def qunlabeled(a):
+    return qand(a, query_unlabeled)
+def qlabeled_toxic(a):
+    return qand(a, query_labeled_toxic)
+
+query_locked = {"is_locked_too_heated":True}
+query_deleted= {"is_deleted":True}
+query_toxiccomment= {"has_comment_classified_toxic":True}
+query_coc= {"has_comment_mention_code_of_conduct":True}
 
